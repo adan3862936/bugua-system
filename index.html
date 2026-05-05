@@ -364,12 +364,44 @@
   }
   .help b { color: #8b4513; }
 
-  /* 列印 */
+  /* 列印（依 body class 切換要列印的分頁） */
   @media print {
-    body { background: #fff; padding: 10px; }
-    .tabs, .picker, .picker-actions, .natal-input { display: none !important; }
-    .panel { display: block !important; page-break-inside: avoid; }
-    .layout { grid-template-columns: 1fr 1fr; }
+    @page { margin: 1.2cm; }
+    body { background: #fff; padding: 0; }
+    .container { max-width: 100%; }
+    .tabs, .help { display: none !important; }
+    .picker, .picker-actions { display: none !important; }
+    h1 { font-size: 22px; margin-bottom: 4px; }
+    .subtitle { font-size: 12px; margin-bottom: 12px; }
+
+    /* 預設顯示模式（無 body class 時，不應該發生）*/
+    .panel { display: none !important; }
+
+    /* 模式控制：依 body class 顯示對應 panel */
+    body.print-single #panel-single,
+    body.print-natal #panel-natal,
+    body.print-pastlife #panel-pastlife,
+    body.print-reference #panel-reference { display: block !important; }
+
+    /* 單卦列印：保留盤面 + 問事欄位 + 分析 */
+    body.print-single .layout { grid-template-columns: 1fr; gap: 12px; }
+    body.print-single .board-card { box-shadow: none; border: 1px solid #d4b896; }
+    body.print-single textarea {
+      border: 1px solid #d4b896 !important; padding: 10px !important;
+      background: #faf3e8 !important; min-height: auto !important;
+    }
+    body.print-single select { border: 1px solid #d4b896 !important; }
+
+    /* 命盤列印：保留 32 子盤面網格 + 8 局拆分 */
+    body.print-natal .natal-input { padding: 8px; }
+    body.print-natal .natal-grid { display: grid !important; }
+    body.print-natal .layer-card { box-shadow: none; border: 1px solid #d4b896; }
+
+    /* 全頁面元素都不要被切割 */
+    .section, .layer-card, .board, .natal-grid {
+      page-break-inside: avoid;
+    }
+    .analysis { box-shadow: none; }
   }
 </style>
 </head>
@@ -440,7 +472,7 @@
             <div class="picker-grid" id="picker-single"></div>
             <div class="picker-actions">
               <button class="btn btn-secondary" id="btn-clear-single">清空盤面</button>
-              <button class="btn btn-primary" id="btn-print">列印解盤</button>
+              <button class="btn btn-primary" id="btn-print">📄 匯出單卦 PDF</button>
             </div>
           </div>
         </div>
@@ -465,6 +497,7 @@
         <div class="picker-actions">
           <button class="btn btn-secondary" id="btn-clear-natal">清空命盤</button>
           <button class="btn btn-primary" id="btn-analyze-natal">產出命盤分析</button>
+          <button class="btn btn-primary" id="btn-print-natal" style="background:#5b8c3e;">📄 匯出命盤 PDF</button>
         </div>
       </div>
     </div>
@@ -1724,7 +1757,7 @@ function setupSingle() {
     renderBoard('board-single', board);
     renderAnalysis(board);
   };
-  document.getElementById('btn-print').onclick = () => window.print();
+  document.getElementById('btn-print').onclick = () => exportPDF('single');
 
   // 問題輸入即時更新
   const qText = document.getElementById('question-text');
@@ -1927,6 +1960,13 @@ function setupNatal() {
     document.getElementById('natal-output').innerHTML = '<div class="empty-msg">請先輸入 32 支棋並按「產出命盤分析」。</div>';
   };
   document.getElementById('btn-analyze-natal').onclick = renderNatalAnalysis;
+  document.getElementById('btn-print-natal').onclick = () => {
+    // 自動先產出分析（如果還沒）
+    if (natalBoard.filter(x => x).length > 0) {
+      renderNatalAnalysis();
+    }
+    setTimeout(() => exportPDF('natal'), 100);
+  };
 }
 
 /* ===== 前世因果 ===== */
@@ -2109,6 +2149,25 @@ function renderReference() {
   </div>`;
 
   target.innerHTML = html;
+}
+
+/* ===== PDF 匯出（依模式列印對應分頁） ===== */
+function exportPDF(mode) {
+  const cls = `print-${mode}`;
+  document.body.classList.add(cls);
+  const cleanup = () => {
+    document.body.classList.remove(cls);
+    window.removeEventListener('afterprint', cleanup);
+  };
+  window.addEventListener('afterprint', cleanup);
+  // 觸發列印對話框，使用者可選「儲存為 PDF」
+  setTimeout(() => window.print(), 50);
+  // 備援：如果 afterprint 沒觸發（某些瀏覽器），3 秒後也清除
+  setTimeout(() => {
+    if (document.body.classList.contains(cls)) {
+      document.body.classList.remove(cls);
+    }
+  }, 3000);
 }
 
 /* ===== Tab 切換 ===== */
