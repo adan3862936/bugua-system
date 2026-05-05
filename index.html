@@ -627,16 +627,30 @@ function canEat(board, attackerPos, victimPos) {
   return false;
 }
 
-// victim 是否有保護（同色棋能反吃 attacker）
+// victim 是否有保護（標準象棋保護概念，2026-05-05 修正）
+//   定義：attacker 吃掉 victim 並移到 victim 的位置後，
+//        是否有同色守衛能吃掉這個「佔據 victim 位置的 attacker」
+//
+//   範例（祥哥例子）：左紅仕 + 中紅兵 + 右黑相
+//     1. 黑相能吃中央紅兵（相 40 大 > 兵 10）→ 黑相從右移到中央
+//     2. 紅仕在左，相鄰中央 → 紅仕能吃中央的黑相（仕 60 大 > 相 40）
+//     3. 紅兵被紅仕保護 → 兵被吃時分數減半
 function isProtected(board, victimPos, attackerPos) {
   const v = board[victimPos];
-  if (!v) return false;
+  const a = board[attackerPos];
+  if (!v || !a) return false;
+  // 模擬：attacker 吃掉 victim 並移到 victim 位置
+  const sim = {};
+  for (const k of POSITIONS) sim[k] = board[k];
+  sim[attackerPos] = null;
+  sim[victimPos] = a;
+  // 找同色守衛能吃到佔據 victim 位置的 attacker
   for (const p of POSITIONS) {
     if (p === victimPos || p === attackerPos) continue;
-    const guard = board[p];
+    const guard = sim[p];
     if (!guard) continue;
     if (guard.color !== v.color) continue;
-    if (canEat(board, p, attackerPos)) return true;
+    if (canEat(sim, p, victimPos)) return true;
   }
   return false;
 }
