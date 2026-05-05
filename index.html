@@ -106,6 +106,28 @@
   .slot.empty { color: #aaa; font-size: 14px; font-weight: normal; }
   .slot.red { color: #c8102e; border-color: #c8102e; }
   .slot.black { color: #1a1a1a; border-color: #1a1a1a; }
+  /* 位置編號角標：中宮(1)、左(2)、右(3)、上(4)、下(5) */
+  .slot::before {
+    content: attr(data-num);
+    position: absolute;
+    top: -8px;
+    left: -8px;
+    background: #8b4513;
+    color: #fff;
+    font-size: 13px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    z-index: 10;
+    border: 2px solid #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  }
+  .slot.red::before { background: #c8102e; }
+  .slot.black::before { background: #1a1a1a; }
   .slot[data-pos="center"] { top: 135px; left: 135px; }
   .slot[data-pos="top"]    { top: 25px;  left: 135px; }
   .slot[data-pos="bottom"] { top: 245px; left: 135px; }
@@ -457,15 +479,15 @@
         <div class="board-card">
           <div class="board-title">五子卦盤</div>
           <div class="board" id="board-single">
-            <div class="pos-label" data-pos="top">上 (長輩/老闆)</div>
-            <div class="pos-label" data-pos="bottom">下 (晚輩/子女)</div>
-            <div class="pos-label" data-pos="left">左 (女平輩/老婆)</div>
-            <div class="pos-label" data-pos="right">右 (男平輩/老公)</div>
-            <div class="slot empty" data-pos="center" data-role="slot">中宮自己</div>
-            <div class="slot empty" data-pos="top" data-role="slot">上</div>
-            <div class="slot empty" data-pos="bottom" data-role="slot">下</div>
-            <div class="slot empty" data-pos="left" data-role="slot">左</div>
-            <div class="slot empty" data-pos="right" data-role="slot">右</div>
+            <div class="pos-label" data-pos="top">④ 上 (長輩/老闆)</div>
+            <div class="pos-label" data-pos="bottom">⑤ 下 (晚輩/子女)</div>
+            <div class="pos-label" data-pos="left">② 左 (女平輩/老婆)</div>
+            <div class="pos-label" data-pos="right">③ 右 (男平輩/老公)</div>
+            <div class="slot empty" data-pos="center" data-num="1" data-role="slot">中宮自己</div>
+            <div class="slot empty" data-pos="top" data-num="4" data-role="slot">上</div>
+            <div class="slot empty" data-pos="bottom" data-num="5" data-role="slot">下</div>
+            <div class="slot empty" data-pos="left" data-num="2" data-role="slot">左</div>
+            <div class="slot empty" data-pos="right" data-num="3" data-role="slot">右</div>
           </div>
           <div class="picker">
             <div class="picker-title">選棋子（選好之後點盤面位置）：當前選擇 <span id="cur-pick">尚未選擇</span></div>
@@ -517,11 +539,11 @@
         <div class="board-card">
           <div class="board-title">前世因果卦盤</div>
           <div class="board" id="board-pastlife">
-            <div class="slot empty" data-pos="center" data-role="slot-pl">①中</div>
-            <div class="slot empty" data-pos="top" data-role="slot-pl">④上</div>
-            <div class="slot empty" data-pos="bottom" data-role="slot-pl">⑤下</div>
-            <div class="slot empty" data-pos="left" data-role="slot-pl">②左</div>
-            <div class="slot empty" data-pos="right" data-role="slot-pl">③右</div>
+            <div class="slot empty" data-pos="center" data-num="1" data-role="slot-pl">中</div>
+            <div class="slot empty" data-pos="top" data-num="4" data-role="slot-pl">上</div>
+            <div class="slot empty" data-pos="bottom" data-num="5" data-role="slot-pl">下</div>
+            <div class="slot empty" data-pos="left" data-num="2" data-role="slot-pl">左</div>
+            <div class="slot empty" data-pos="right" data-num="3" data-role="slot-pl">右</div>
           </div>
           <div class="picker">
             <div class="picker-title">選棋子：當前選擇 <span id="cur-pick-pl">尚未選擇</span></div>
