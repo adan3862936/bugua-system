@@ -641,11 +641,38 @@ function isProtected(board, victimPos, attackerPos) {
   return false;
 }
 
-// 兩棋是否好朋友配對（同字異色）
+// 兩棋是否同字異色配對（粗略判斷，不看位置）
 function isFriendPair(p1, p2) {
   if (!p1 || !p2) return false;
   if (p1.color === p2.color) return false;
   return p1.kind === p2.kind;
+}
+
+// 嚴格判定「好朋友格」（依棋種要求位置）
+//   將/帥、仕/士、象/相、俥/車、兵/卒：上下左右相鄰（中-外圍）
+//   馬/傌：要斜相鄰（5 子盤十字形無斜相鄰位置 → 永遠不會是好朋友格）
+//   炮/包：要中間隔一隻棋（即跨中央 + 中央有棋當跳板）
+function isFriendPairStrict(b, p1pos, p2pos) {
+  const p1 = b[p1pos], p2 = b[p2pos];
+  if (!isFriendPair(p1, p2)) return false;
+  const kind = p1.kind;
+  if (kind === 'ma') {
+    // 馬要斜相鄰，5 子盤無斜方向 → 永遠不成立好朋友格
+    return false;
+  }
+  if (kind === 'pao') {
+    // 炮要中間隔一隻棋（跨中央 + 中央有棋當跳板）
+    const mid = getMiddle(p1pos, p2pos);
+    return mid !== null && b[mid] !== null;
+  }
+  // 將仕象車兵：上下左右相鄰才是好朋友（中-外圍直接相鄰）
+  return isAdjacent(p1pos, p2pos);
+}
+
+// 好人緣格 = 同字異色但不是好朋友
+function isGoodLuckPair(b, p1pos, p2pos) {
+  if (!isFriendPair(b[p1pos], b[p2pos])) return false;
+  return !isFriendPairStrict(b, p1pos, p2pos);
 }
 
 /* ===== 格局偵測 ===== */
@@ -667,26 +694,38 @@ function detectPatterns(board) {
     colorByKind[piece.kind].positions.push(p);
   }
 
-  // 1. 好朋友格 / 好人緣格 / 困擾格
-  const friendPairs = []; // 中-外圍同字異色
-  const goodLuckPairs = []; // 兩外圍同字異色
+  // 1. 好朋友格 / 好人緣格 / 困擾格（依棋種嚴格判定）
+  const friendPairs = []; // 嚴格好朋友：將仕象車兵上下左右相鄰、炮跨中央隔空
+  const goodLuckPairs = []; // 好人緣：同字異色但不符好朋友位置要求
   for (let i = 0; i < presentPos.length; i++) {
     for (let j = i+1; j < presentPos.length; j++) {
-      const a = presentPos[i], b = presentPos[j];
-      if (isFriendPair(board[a], board[b])) {
-        if (a === 'center' || b === 'center') {
-          friendPairs.push([a, b]);
-        } else {
-          goodLuckPairs.push([a, b]);
-        }
+      const a = presentPos[i], bp = presentPos[j];
+      if (!isFriendPair(board[a], board[bp])) continue;
+      if (isFriendPairStrict(board, a, bp)) {
+        friendPairs.push([a, bp]);
+      } else {
+        goodLuckPairs.push([a, bp]);
       }
     }
   }
   if (friendPairs.length > 0) {
-    result.push({type:'good', name:'好朋友格', desc:`同字異色 ${friendPairs.length} 組（${friendPairs.map(p=>board[p[0]].name+'+'+board[p[1]].name).join('、')}）。互相欣賞、有保護，整盤分數計算減半。`});
+    const detail = friendPairs.map(p => {
+      const k = board[p[0]].kind;
+      const tag = k === 'pao' ? '隔空' : k === 'ma' ? '斜對' : '相鄰';
+      return `${board[p[0]].name}+${board[p[1]].name}(${tag})`;
+    }).join('、');
+    result.push({type:'good', name:'好朋友格', desc:`${friendPairs.length} 組（${detail}）。互相欣賞、有保護，整盤分數計算減半。`});
   }
   if (goodLuckPairs.length > 0) {
-    result.push({type:'good', name:'好人緣格', desc:`斜對好朋友 ${goodLuckPairs.length} 組（${goodLuckPairs.map(p=>board[p[0]].name+'+'+board[p[1]].name).join('、')}）。人緣不錯、間接幫助。`});
+    const detail = goodLuckPairs.map(p => {
+      const k = board[p[0]].kind;
+      let tag = '';
+      if (k === 'ma') tag = '上下左右(非斜)';
+      else if (k === 'pao') tag = '相鄰(無跳板)';
+      else tag = '外圍對外圍';
+      return `${board[p[0]].name}+${board[p[1]].name}(${tag})`;
+    }).join('、');
+    result.push({type:'good', name:'好人緣格', desc:`${goodLuckPairs.length} 組（${detail}）。人緣不錯、間接幫助。`});
   }
   // 困擾格：需要兩組「真好朋友」
   if (friendPairs.length >= 2) {
@@ -804,12 +843,15 @@ function detectPatterns(board) {
     result.push({type:'warn', name:'暴君格', desc:'黑將無卒搭配 → 強勢、自我、情緒起伏、想控制事情但缺下屬配合。女命盤+中央同色容易離婚。'});
   }
 
-  // 12. 分離格：同字異色被「隔開」（位置在上↔下 或 左↔右，中間夾中央）
+  // 12. 分離格：本來該是好朋友的同字異色被「隔開」（中央隔開）
+  //     僅對「將仕象車兵」適用（這些棋上下左右相鄰才是好朋友）
+  //     炮/包：本來就要隔空 → 反而是好朋友，不算分離
+  //     馬/傌：本來要斜相鄰才是好朋友，5 子盤無斜，不算分離（算好人緣）
   const splitChecks = [['top','bottom'],['left','right']];
   for (const [a, b] of splitChecks) {
     if (board[a] && board[b] && isFriendPair(board[a], board[b])) {
-      // 排除炮/包（炮包本來就要隔空）
-      if (board[a].kind !== 'pao') {
+      const kind = board[a].kind;
+      if (['shuai','shi','xiang','che','bing'].includes(kind)) {
         result.push({type:'warn', name:'分離格', desc:`${board[a].name}+${board[b].name} 同字異色被中央隔開 → 緣分較淺、關係容易斷、不易融合。`});
       }
     }
@@ -901,11 +943,11 @@ function computeScores(board) {
   const presentPos = POSITIONS.filter(p => board[p]);
   const center = board.center;
 
-  // 整盤是否有好朋友配對 → 全盤計分減半
+  // 整盤是否有「嚴格好朋友配對」 → 全盤計分減半
   let halfBoard = false;
   for (let i = 0; i < presentPos.length; i++) {
     for (let j = i+1; j < presentPos.length; j++) {
-      if (isFriendPair(board[presentPos[i]], board[presentPos[j]])) {
+      if (isFriendPairStrict(board, presentPos[i], presentPos[j])) {
         halfBoard = true; break;
       }
     }
@@ -918,7 +960,8 @@ function computeScores(board) {
       if (aPos === vPos) continue;
       if (canEat(board, aPos, vPos)) {
         let s = board[vPos].score;
-        const friendPair = isFriendPair(board[aPos], board[vPos]);
+        // 個別吃法：嚴格好朋友配對才減半
+        const friendPair = isFriendPairStrict(board, aPos, vPos);
         const protected_ = isProtected(board, vPos, aPos);
         if (friendPair || protected_) s = s / 2;
         if (halfBoard) s = s / 2;
