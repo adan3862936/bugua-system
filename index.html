@@ -467,9 +467,22 @@
             <option value="recruit">✅ 錄取/考試卦</option>
             <option value="decision">🤔 決策卦</option>
             <option value="fortune">🔮 運勢卦（周/月/年）</option>
+            <option value="healing">🧘 療癒淨化效果卦（書版v2.0）</option>
+          </select>
+          <label style="display:block;font-size:13px;color:#6b3410;font-weight:600;margin:10px 0 6px;">卜主性別（影響位置代表角色）</label>
+          <select id="querent-gender" style="width:100%;padding:8px;border:2px solid #d4b896;border-radius:6px;font-size:13px;background:#fff;">
+            <option value="">未指定（用通用）</option>
+            <option value="male">👨 男性</option>
+            <option value="female">👩 女性</option>
+          </select>
+          <label style="display:block;font-size:13px;color:#6b3410;font-weight:600;margin:10px 0 6px;">婚姻狀態</label>
+          <select id="querent-married" style="width:100%;padding:8px;border:2px solid #d4b896;border-radius:6px;font-size:13px;background:#fff;">
+            <option value="">未指定</option>
+            <option value="no">未婚</option>
+            <option value="yes">已婚</option>
           </select>
           <div style="font-size:11px;color:#888;margin-top:6px;line-height:1.5;">
-            「自動」會依關鍵字判讀；不準時請手動選擇。
+            蔡建安老師：性別+婚姻會影響②③位置代表的人物（婚前=姊妹/兄弟，婚後=妻子/丈夫）。
           </div>
         </div>
       </div>
@@ -588,7 +601,7 @@ const PIECES = {
   '仕': {color:'red',   kind:'shi',   name:'仕', score:60, level:'天-中格', element:'金', persona:'像行政院長，謀略、運籌帷幄、能文能武。重義氣有智慧，自以為是的想法多，需承擔大局成敗。', organ:'肺、大腸、皮膚、鼻、呼吸系統', emotion:'憂傷肺'},
   '相': {color:'red',   kind:'xiang', name:'相', score:40, level:'天-下格', element:'火', persona:'宰相般足智多謀，執行政策。親民慈悲、重禮節，但被動不積極，與宗教修行緣份較深。', organ:'心、小腸、血管、舌、血液循環', emotion:'喜傷心'},
   '俥': {color:'red',   kind:'che',   name:'俥', score:30, level:'人-上格', element:'木', persona:'帶領一群人的領導者，喜歡訂規矩、管事，不喜被約束。心軟但脾氣大、講話直接、性格衝。', organ:'肝、膽、筋、目、免疫系統', emotion:'怒傷肝（壓抑、浮燥）'},
-  '傌': {color:'red',   kind:'ma',    name:'傌', score:20, level:'人-中格', element:'木', persona:'遊走人群之間，好管閒事、心軟嘴軟，察言觀色、口才好，常不在家。對情感有浪漫期待。', organ:'肝、膽、筋、目、免疫系統', emotion:'怒傷肝'},
+  '傌': {color:'red',   kind:'ma',    name:'傌', score:20, level:'人-中格', element:'木', persona:'遊走人群之間，好管閒事、心軟嘴軟，察言觀色、口才好，常不在家。對情感有浪漫期待。', organ:'關節、筋絡（馬會跑來跑去，代表關節筋絡）', emotion:'怒傷肝'},
   '炮': {color:'red',   kind:'pao',   name:'炮', score:15, level:'人-下格', element:'水', persona:'團體裡較沒權力，靠小聰明善巧突破。直覺力強、人緣不錯、長相通常好。受威脅時內心常恐懼。', organ:'腎、膀胱、骨、耳、婦科、攝護腺、內分泌', emotion:'恐傷腎'},
   '兵': {color:'red',   kind:'bing',  name:'兵', score:10, level:'地-上格', element:'土', persona:'腳踏實地、討厭別人不守信用，有理想不投機。對「能不能落地執行」想很多，務實踏實。', organ:'脾、胃、肌肉、口、消化系統', emotion:'思傷胃（緊張焦慮）'},
   // 黑方
@@ -596,7 +609,7 @@ const PIECES = {
   '士': {color:'black', kind:'shi',   name:'士', score:60, level:'天-中格', element:'金', persona:'像行政院長，謀略、運籌帷幄、能文能武。重義氣有智慧，自以為是的想法多，需承擔大局成敗。', organ:'肺、大腸、皮膚、鼻、呼吸系統', emotion:'憂傷肺'},
   '象': {color:'black', kind:'xiang', name:'象', score:40, level:'天-下格', element:'火', persona:'宰相般足智多謀，執行政策。親民慈悲、重禮節，但被動不積極，與宗教修行緣份較深。', organ:'心、小腸、血管、舌、血液循環', emotion:'喜傷心'},
   '車': {color:'black', kind:'che',   name:'車', score:30, level:'人-上格', element:'木', persona:'帶領一群人的領導者，喜歡訂規矩、管事，不喜被約束。心軟但脾氣大、講話直接、性格衝。', organ:'肝、膽、筋、目、免疫系統', emotion:'怒傷肝'},
-  '馬': {color:'black', kind:'ma',    name:'馬', score:20, level:'人-中格', element:'木', persona:'遊走人群之間，好管閒事、心軟嘴軟，察言觀色、口才好，常不在家。對情感有浪漫期待。', organ:'肝、膽、筋、目、免疫系統', emotion:'怒傷肝'},
+  '馬': {color:'black', kind:'ma',    name:'馬', score:20, level:'人-中格', element:'木', persona:'遊走人群之間，好管閒事、心軟嘴軟，察言觀色、口才好，常不在家。對情感有浪漫期待。', organ:'關節、筋絡（馬會跑來跑去，代表關節筋絡）', emotion:'怒傷肝'},
   '包': {color:'black', kind:'pao',   name:'包', score:15, level:'人-下格', element:'水', persona:'團體裡較沒權力，靠小聰明善巧突破。直覺力強、人緣不錯、長相通常好。受威脅時內心常恐懼。', organ:'腎、膀胱、骨、耳、婦科、攝護腺、內分泌', emotion:'恐傷腎'},
   '卒': {color:'black', kind:'bing',  name:'卒', score:10, level:'地-下格', element:'土', persona:'腳踏實地、討厭別人不守信用，有理想不投機。對「能不能落地執行」想很多，務實踏實。', organ:'脾、胃、肌肉、口、消化系統', emotion:'思傷胃'},
 };
@@ -921,12 +934,22 @@ function detectPatterns(board) {
     result.push({type:'good', name:'明君格', desc:'黑將帶黑卒 → 有方向、有計畫、有領導能力、能帶兵打仗。'});
   }
 
-  // 11. 暴君格：將/帥 出現但無兵卒搭配（同色）
+  // 11. 暴動格：將/帥 出現但無兵卒搭配（書版 v2.0 命名「暴動格」，取代「暴君格」）
+  //     ◎ 自己暴動：將/帥在中央，看不到自己同色兵卒 → 偏執認知、情緒起伏做錯決定
+  //     ◎ 外在暴動：將/帥不在中央但盤中存在，無同色兵卒搭配 → 外在變數或意外
   if (redShuaiPos && redBingPos.length === 0) {
-    result.push({type:'warn', name:'暴君格', desc:'紅帥無兵搭配 → 強勢、自我、情緒起伏、想控制事情但缺下屬配合。女命盤+中央同色容易離婚。'});
+    const isCenter = redShuaiPos === 'center';
+    result.push({type:'warn', name: isCenter ? '暴動格(自己)' : '暴動格(外在)',
+      desc: isCenter
+        ? '紅帥在中央且看不到紅兵 → 自己的暴動：偏執認知、情緒起伏，容易做錯決定。'
+        : `紅帥在${POS_LABEL[redShuaiPos]}且無紅兵搭配 → 外在的暴動：會有外在變數或意外。`});
   }
   if (blackJiangPos && blackZuPos.length === 0) {
-    result.push({type:'warn', name:'暴君格', desc:'黑將無卒搭配 → 強勢、自我、情緒起伏、想控制事情但缺下屬配合。女命盤+中央同色容易離婚。'});
+    const isCenter = blackJiangPos === 'center';
+    result.push({type:'warn', name: isCenter ? '暴動格(自己)' : '暴動格(外在)',
+      desc: isCenter
+        ? '黑將在中央且看不到黑卒 → 自己的暴動：偏執認知、情緒起伏，容易做錯決定。'
+        : `黑將在${POS_LABEL[blackJiangPos]}且無黑卒搭配 → 外在的暴動：會有外在變數或意外。`});
   }
 
   // 12. 分離格：本來該是好朋友的同字異色被「隔開」（中央隔開）
@@ -986,13 +1009,16 @@ function detectPatterns(board) {
     }
   }
 
-  // 15. 玉竹格 / 眾星拱月格（中央唯一異色）
+  // 15. 眾星拱月格 / 鬱卒格（中央唯一異色 — 書版 v2.0 命名）
+  //     ◎ 中央=黑，外圍 4 紅 → 別人看好（眾星拱月）
+  //     ◎ 中央=紅，外圍 4 黑 → 別人不看好（容易鬱卒）
+  //     ◎ 兩者皆陰陽不協調，分數要乘以 50%
   if (center && presentPos.length === 5) {
     const sameAsCenter = POSITIONS.filter(p => p !== 'center' && board[p].color === center.color).length;
     const diff = POSITIONS.filter(p => p !== 'center' && board[p].color !== center.color).length;
     if (diff === 4 && sameAsCenter === 0) {
-      // 中央唯一異色，看分數
-      result.push({type:'info', name:'玉竹/眾星拱月格', desc:`中央 ${center.name} 是唯一${center.color==='red'?'紅':'黑'}色，四周${center.color==='red'?'黑':'紅'}色 → ${center.color==='red'?'別人不看好' : '別人很看好'}。收穫>付出=眾星拱月；收穫<付出=玉竹格（鬱悶）。`});
+      const name = center.color === 'red' ? '鬱卒格' : '眾星拱月格';
+      result.push({type:'info', name, desc:`中央 ${center.name} 是唯一${center.color==='red'?'紅':'黑'}色，四周${center.color==='red'?'黑':'紅'}色 → ${center.color==='red'?'外界不看好你，但事實上狀態挺好的，只是心情會悶（鬱卒）。' : '別人看你什麼都挺好，但事實上常常很鬱卒。'}陰陽不協調，分數×50%。`});
     }
   }
 
@@ -1011,20 +1037,163 @@ function detectPatterns(board) {
     }
   }
 
-  // 18. 十字天柱格（上中下同色 或 左中右同色）
+  // 18. 十字天助格（上中下同色 或 左中右同色 — 書版 v2.0 命名）
   if (center) {
     if (board.top && board.bottom && board.top.color === center.color && board.bottom.color === center.color) {
-      result.push({type:'good', name:'十字天柱格(縱)', desc:'上中下同色 → 天時對了、有老天助力、時機點正確。'});
+      result.push({type:'good', name:'十字天助格(縱)', desc:'①②③④⑤之①②③同色（縱十字）→ 有天助、有老天看顧、時機點對了。'});
     }
     if (board.left && board.right && board.left.color === center.color && board.right.color === center.color) {
-      result.push({type:'good', name:'十字天柱格(橫)', desc:'左中右同色 → 天時對了、有老天助力、時機點正確。'});
+      result.push({type:'good', name:'十字天助格(橫)', desc:'①④⑤同色（橫十字）→ 有天助、有老天看顧、時機點對了。'});
     }
+  }
+
+  // ====================================================================
+  // 書版 v2.0 新增格局（蔡建安《改寫人生的象棋卜卦》）
+  // ====================================================================
+
+  // 19. 事業格（書版 v2.0 新增）
+  //     卦象同時出現俥傌炮 / 車馬包（不論顏色），即為事業格
+  //     代表會有像做事業那樣的認真態度，但好壞得看付出與收穫
+  //     女性命盤總格出現事業格（且其中一隻在中間）→ 也代表有離婚的資料
+  const hasChe = presentPos.some(p => board[p].kind === 'che');
+  const hasMa = presentPos.some(p => board[p].kind === 'ma');
+  const hasPaoForCareer = presentPos.some(p => board[p].kind === 'pao');
+  if (hasChe && hasMa && hasPaoForCareer) {
+    const careerInCenter = center && ['che','ma','pao'].includes(center.kind);
+    result.push({type:'good', name:'事業格',
+      desc:`同盤出現俥傌炮（車馬包）→ 會有「認真做事業」那種態度。${careerInCenter ? '其中一隻在中央，認真度更明顯。女性命盤總格出現此格代表有離婚的資料。' : ''}並非有事業格就是好卦，好壞得看付出與收穫。`});
+  }
+
+  // 20. 大師格（命盤總格專用 — 書版 v2.0 新增）
+  //     中央①是任意非兵卒棋，②③④⑤都是兵卒（同色或混色）
+  //     外圍兵卒圍繞，凸顯中央卦主的特性
+  //     中央如為兵卒則進化為皇帝格（21）
+  if (center && center.kind !== 'bing' && presentPos.length === 5) {
+    const peripheryAllBing = ['top','bottom','left','right'].every(p => board[p] && board[p].kind === 'bing');
+    if (peripheryAllBing) {
+      const map = {
+        shuai:'做任何行業都適合',
+        shi:'適合從政、掌權',
+        xiang:'一代宗師、宗教修行緣份深',
+        che:'適合領導一群人',
+        ma:'會有一群人跟著奔波',
+        pao:'男的帥、女的美，適合偶像明星'
+      };
+      result.push({type:'good', name:'大師格',
+        desc:`中央 ${center.name}（${map[center.kind] || ''}）+ 外圍四隻兵卒 → 凸顯卦主${center.name}的特質。（命盤總格專用）`});
+    }
+  }
+
+  // 21. 皇帝格（命盤總格專用 — 書版 v2.0 新增）
+  //     五子全為兵卒（同色或混色）
+  //     五隻全地格，做事踏實只往上不往下，做什麼都容易成功
+  if (presentPos.length === 5 && presentPos.every(p => board[p].kind === 'bing')) {
+    result.push({type:'good', name:'皇帝格',
+      desc:'五子全為兵卒 → 五隻都是地格，做事踏實只往上不往下，做什麼都容易成功。（命盤總格專用，單卦/年運則依個別狀態論）'});
+  }
+
+  // 22. 修行緣分格（命盤總格專用 — 書版 v2.0 新增）
+  //     7 種狀況之一即成立
+  if (center) {
+    const sameColorMaPaoExists = ['top','bottom','left','right'].some(p =>
+      board[p] && ['ma','pao'].includes(board[p].kind) && board[p].color === center.color);
+    const xiuxingTrigs = [];
+    // 1. 中央相/象 + 同色傌馬/炮包能吃對方
+    if (center.kind === 'xiang' && sameColorMaPaoExists) {
+      xiuxingTrigs.push('中央相/象 + 同色傌馬/炮包');
+    }
+    // 5. 中央位置是傌/馬/炮/包（體質敏感、直覺強）
+    if (['ma','pao'].includes(center.kind)) {
+      xiuxingTrigs.push('中央是傌馬/炮包：體質敏感、直覺強');
+    }
+    // 6. 對方傌馬/炮包吃我們棋子（容易卡陰，但帶天命）
+    const enemyMaPaoEats = POSITIONS.some(p => {
+      if (!board[p] || board[p].color === center.color) return false;
+      if (!['ma','pao'].includes(board[p].kind)) return false;
+      return POSITIONS.some(v => v !== p && board[v] && board[v].color === center.color && canEat(board, p, v));
+    });
+    if (enemyMaPaoEats) xiuxingTrigs.push('對方傌馬/炮包吃我方棋子：容易卡陰但帶天命');
+    // 7. 有雨傘格或十字天助格
+    if (result.some(r => r.name === '雨傘格' || r.name.includes('十字天助'))) {
+      xiuxingTrigs.push('有雨傘格或十字天助格');
+    }
+    if (xiuxingTrigs.length > 0) {
+      result.push({type:'good', name:'修行緣分格',
+        desc:`修行緣分（${xiuxingTrigs.join(' / ')}）→ 有跟神明/高維連結的緣分，適合修行。（命盤總格適用）`});
+    }
+  }
+
+  // 23. 生死關（命盤十年運專用 — 書版 v2.0 新增）
+  //     被通吃格 + 中央棋無能力與外圍抗衡或跑掉
+  //     死因判讀依被吃中央棋
+  if (center) {
+    const allUnprotected = result.some(r => r.name === '被通吃格');
+    if (allUnprotected) {
+      const centerCanRun = POSITIONS.some(p => p !== 'center' && board[p] && canEat(board, 'center', p));
+      if (!centerCanRun) {
+        const deathCauseMap = {
+          shi:'肺、支氣管、大腸（呼吸系統）',
+          xiang:'心血管疾病',
+          ma:'意外（馬被吃常代表意外）',
+          pao:'腎、泌尿、婦科、攝護腺',
+          bing:'脾胃、口腔（消化系統）',
+          shuai:'重大關卡',
+          che:'車禍、肝膽免疫'
+        };
+        result.push({type:'warn', name:'生死關',
+          desc:`被通吃且中央無能力反吃跑掉 → 命盤十年運中的重大關卡。可能死因：${deathCauseMap[center.kind] || '對應系統'}。（命盤十年運專用，單卦/年運不看；總格不看）`});
+      }
+    }
+  }
+
+  // 24. 離婚格（女命盤總格專用 — 書版 v2.0 新增）
+  //     6 種狀況累計（次數越多離越多次）
+  //     注意：男命盤看不出來
+  //     需 UI 端傳入「卦主性別=女」才應用，這裡只回報標記
+  const divorceTrigs = [];
+  // 1. 第一隻是將、帥、黑士、黑車（紅仕、紅俥不算）
+  if (center && (center.name === '將' || center.name === '帥' || center.name === '士' || center.name === '車')) {
+    if (center.name === '士' || center.name === '車') {
+      divorceTrigs.push(`第一隻是黑${center.name}（武氣強）`);
+    } else {
+      divorceTrigs.push(`第一隻是${center.name}（執著強）`);
+    }
+  }
+  // 2. 有帥/將但不在中央位置（外在暴君50%離婚率，自己暴君更高）
+  if ((redShuaiPos && redShuaiPos !== 'center') || (blackJiangPos && blackJiangPos !== 'center')) {
+    divorceTrigs.push('有帥/將但不在中央：外在暴動，50%離婚率');
+  } else if (center && (center.name === '帥' || center.name === '將')) {
+    if (!POSITIONS.some(p => p !== 'center' && board[p] && board[p].kind === 'bing' && board[p].color === center.color)) {
+      divorceTrigs.push('將/帥在中央且看不到同色兵卒：自己暴動，更高離婚率');
+    }
+  }
+  // 3. 分離格（好朋友被隔開，炮包除外）
+  if (result.some(r => r.name === '分離格')) {
+    divorceTrigs.push('有分離格：價值觀不同、緣分淺');
+  }
+  // 4. 有事業格（俥傌炮/車馬包）且其中一隻在中間
+  if (hasChe && hasMa && hasPaoForCareer && center && ['che','ma','pao'].includes(center.kind)) {
+    divorceTrigs.push('事業格+中央俥傌炮：能量用在情感會婚姻不好');
+  }
+  // 5. 被通吃格（若是通吃對方的通吃格 → 50%）
+  if (result.some(r => r.name === '被通吃格')) {
+    divorceTrigs.push('被通吃格');
+  } else if (result.some(r => r.name === '通吃格')) {
+    divorceTrigs.push('通吃格（50%離婚率）');
+  }
+  // 6. 全紅或全黑的悔恨格
+  if (result.some(r => r.name.includes('悔恨'))) {
+    divorceTrigs.push('全紅/全黑悔恨格');
+  }
+  if (divorceTrigs.length > 0) {
+    result.push({type:'warn', name:'離婚格(女命盤)',
+      desc:`若卦主為女性且為命盤總格 → 累計 ${divorceTrigs.length} 項離婚劇情：${divorceTrigs.join('；')}。次數越多代表會經驗越多次離婚。男命盤不看此格。`});
   }
 
   return result;
 }
 
-/* ===== 收穫付出計算 ===== */
+/* ===== 收穫付出計算（書版 v2.0 — 含通吃/悔恨/陰陽不協調分數比例） ===== */
 function computeScores(board) {
   const presentPos = POSITIONS.filter(p => board[p]);
   const center = board.center;
@@ -1069,7 +1238,47 @@ function computeScores(board) {
     }
   }
 
-  return {eats, centerGain, centerLoss, halfBoard, net: centerGain - centerLoss};
+  // ====================================================================
+  // 書版 v2.0 分數比例調整（依特殊格局）
+  //   - 通吃格 → 收穫×20%（依書版「依經驗大多只有20%或歸零」）
+  //   - 被通吃格 → 收穫×20%（頂多20%甚至負債）
+  //   - 全紅全黑悔恨格 → 收穫付出皆×20%
+  //   - 一枝獨秀格、眾星拱月格、鬱卒格 → 收穫付出皆×50%（陰陽不協調）
+  // ====================================================================
+  const patterns = detectPatterns(board);
+  const isAllEat = patterns.some(p => p.name === '通吃格');
+  const isAllEaten = patterns.some(p => p.name === '被通吃格');
+  const isHuihen = patterns.some(p => p.name.includes('悔恨'));
+  const isOneOnly = patterns.some(p => p.name === '一枝獨秀格');
+  const isCrowdedMoon = patterns.some(p => p.name === '眾星拱月格' || p.name === '鬱卒格');
+
+  let scoreRatio = 1.0;
+  let scoreNote = '';
+  if (isHuihen) {
+    scoreRatio = 0.20;
+    scoreNote = '悔恨格：收穫付出皆×20%';
+  } else if (isOneOnly || isCrowdedMoon) {
+    scoreRatio = 0.50;
+    scoreNote = '陰陽不協調（一枝獨秀/眾星拱月/鬱卒）：收穫付出皆×50%';
+  }
+
+  // 通吃/被通吃只調收穫
+  let gainRatio = scoreRatio;
+  if (isAllEat || isAllEaten) {
+    gainRatio = Math.min(gainRatio, 0.20);
+    scoreNote = (scoreNote ? scoreNote + '；' : '') + (isAllEat ? '通吃格：收穫×20%（最後易歸零）' : '被通吃格：收穫頂多20%（甚至負債）');
+  }
+
+  const adjustedGain = centerGain * gainRatio;
+  const adjustedLoss = centerLoss * scoreRatio;
+
+  return {
+    eats, centerGain, centerLoss, halfBoard,
+    net: centerGain - centerLoss,
+    adjustedGain, adjustedLoss,
+    adjustedNet: adjustedGain - adjustedLoss,
+    scoreRatio, gainRatio, scoreNote
+  };
 }
 
 /* ===== 五行分布 ===== */
@@ -1216,6 +1425,205 @@ function buildLifeNarratives(board, patterns, scoreInfo, fiveInfo) {
     out.push({title:'建議與療癒淨化方向', content: advice.join('\n')});
   }
   return out;
+}
+
+/* ===== 蔡建安老師口吻解盤敘述（書版 v2.0 — 五段式：狀態→互動→格局→付出收穫→健康） ===== */
+function buildCaiJiananNarrative(board, patterns, scoreInfo, fiveInfo, qContext) {
+  const center = board.center;
+  if (!center) return [];
+  const out = [];
+  const sections = [];
+  const presentPos = POSITIONS.filter(p => board[p]);
+  const isMale = qContext?.gender === 'male';
+  const isFemale = qContext?.gender === 'female';
+  const isMarried = qContext?.married === 'yes';
+  // 卜主代名詞
+  const subj = qContext?.gender ? (isMale ? '他' : '她') : '你';
+  const subjPossessive = qContext?.gender ? (isMale ? '他的' : '她的') : '你的';
+  const me = qContext?.gender ? subj : '你';
+
+  // ① 狀態 — 從中央以及與中央同色的棋子論卦主特質
+  const sameColorPositions = POSITIONS.filter(p => p !== 'center' && board[p] && board[p].color === center.color);
+  let statePart = `**中央是${center.name}**，${center.persona}`;
+  if (sameColorPositions.length > 0) {
+    const sameColorNames = sameColorPositions.map(p => board[p].name).join('、');
+    statePart += `\n\n${subj}同時擁有「${sameColorNames}」的特質：`;
+    sameColorPositions.forEach(p => {
+      const piece = board[p];
+      const trait = {
+        shuai:'有皇帝氣勢、講話有影響力',
+        shi:'帶名聲、有智慧、運籌帷幄',
+        xiang:'重禮節、慈悲心、跟修行有緣',
+        che:'敢衝、領導力強',
+        ma:'人脈廣、口才好',
+        pao:'直覺強、有善巧',
+        bing:'務實、踏實，一步一腳印'
+      }[piece.kind] || '';
+      statePart += `\n　• ${piece.name}（${POS_LABEL[p].split('(')[0]}）→ ${trait}`;
+    });
+  }
+  // 中央 + 馬入中宮 / 炮入中宮
+  if (center.kind === 'ma' && !POSITIONS.some(p => p !== 'center' && board[p] && canEat(board, 'center', p))) {
+    statePart += `\n\n⚠ 馬入中宮：馬本來要走斜衝出去，現在卡在中央吃不到任何人 → 想做想衝，但現實不容易配合，容易做沒效率的事。建議${subj}做療癒淨化，清掉「想很多卻動不起來」的資料。`;
+  }
+  if (center.kind === 'pao' && !POSITIONS.some(p => p !== 'center' && board[p] && canEat(board, 'center', p))) {
+    statePart += `\n\n⚠ 炮入中宮：炮需要跳板才能發揮，現在卡在中央沒有媒介 → 有能力但缺平台，容易好高騖遠。建議${subj}做顯化，請出協助${subjPossessive}有所突破的貴人與可能性。`;
+  }
+  sections.push({title:'① 狀態（中央＋同色棋子論卦主特質）', content: statePart});
+
+  // ② 互動關係 — 跟身邊的人的互動關係
+  const POS_REL_GENERIC = {
+    top: '長輩、上司、年齡大十歲以上的朋友',
+    bottom: '晚輩、下屬、子女、年齡小十歲以下的朋友',
+    left: isMarried && isMale ? '妻子、女性平輩朋友、同事' :
+          isMarried && isFemale ? '兄弟姊妹、女性平輩朋友、同事' :
+          isFemale ? '姊妹、女性平輩朋友、同事' :
+          isMale ? '姊妹、女朋友、女性平輩朋友、同事' :
+          '女性平輩、姊妹、女友/老婆',
+    right: isMarried && isMale ? '兄弟、男性平輩朋友、同事' :
+          isMarried && isFemale ? '丈夫、男性平輩朋友、同事' :
+          isFemale ? '兄弟、男朋友、男性平輩朋友、同事' :
+          isMale ? '兄弟、男性平輩朋友、同事' :
+          '男性平輩、兄弟、男友/老公'
+  };
+  let interactPart = '';
+  for (const p of ['top','bottom','left','right']) {
+    if (!board[p]) continue;
+    const piece = board[p];
+    const sameColor = piece.color === center.color;
+    const centerEatsThem = canEat(board, 'center', p);
+    const theyEatCenter = canEat(board, p, 'center');
+    const protectedFromCenter = sameColor ? false : isProtected(board, p, 'center');
+    const protectedToCenter = sameColor ? false : isProtected(board, 'center', p);
+
+    let line = `\n• **${POS_REL_GENERIC[p]}**（${piece.name}${sameColor?'，同色':'，異色'}）：`;
+    if (sameColor) {
+      line += `跟${subj}是同邊的，是夥伴/自己人。互動上比較和氣、不會正面衝突。`;
+    } else if (centerEatsThem && theyEatCenter) {
+      line += `互利互吃，這個位置的人有來有往。需要看分數判斷誰收穫多。`;
+    } else if (centerEatsThem) {
+      const halfNote = protectedFromCenter ? '（對方有保護，只能得到一半好處）' : '';
+      line += `${subj}可以從這個關係得到好處 → 開口要、提需求多半會給。${halfNote}`;
+    } else if (theyEatCenter) {
+      line += protectedToCenter
+        ? `對方會吃${subj}，但${subj}有保護，只需付出一半。`
+        : `對方會吃${subj} → ${subj}會勞心勞力、破財、付出多。建議要為這個關係做療癒淨化。`;
+    } else {
+      line += '雙方無吃法，沒有明顯互動，各走各的。';
+    }
+    interactPart += line;
+  }
+  sections.push({title:'② 互動關係', content: interactPart || '（盤上只有中央，無外圍互動可論。）'});
+
+  // ③ 格局及需注意的狀態
+  let patternPart = '';
+  const importantPatterns = patterns.filter(p =>
+    !p.name.includes('好人緣') && !p.name.includes('十字天助') // 太通用的略過
+  );
+  if (importantPatterns.length === 0) {
+    patternPart = '本盤沒有特殊格局，主要看付出與收穫的分數判讀。';
+  } else {
+    patternPart += '本盤主要格局：\n';
+    for (const p of importantPatterns) {
+      const icon = p.type === 'good' ? '✓' : p.type === 'warn' ? '⚠' : '○';
+      patternPart += `\n${icon} **${p.name}**：${p.desc}`;
+    }
+  }
+  // 暴動格的人體部位提示
+  for (const p of POSITIONS) {
+    if (!board[p]) continue;
+    if (board[p].kind !== 'shuai') continue;
+    if (board[p].color === center.color) continue; // 同色不威脅
+    if (!POSITIONS.some(bp => board[bp] && board[bp].kind === 'bing' && board[bp].color === board[p].color)) {
+      // 暴動的將/帥
+      const bodyMap = {
+        center:'脖子以下、肚臍以上（軀幹中央）',
+        left:'身體右側（鏡像）',
+        right:'身體左側（鏡像）',
+        top:'頭部',
+        bottom:'肚臍以下、下肢'
+      };
+      patternPart += `\n\n💢 暴動的${board[p].name}在${POS_LABEL[p].split('(')[0]} → 對應${subjPossessive}${bodyMap[p]}氣血循環會比較不順暢，建議做清理。`;
+    }
+  }
+  sections.push({title:'③ 格局及需注意的狀態', content: patternPart});
+
+  // ④ 付出與收穫
+  let scorePart = `${subj}這次卦象的收穫與付出：\n`;
+  scorePart += `\n　原始計算：收穫 ${scoreInfo.centerGain} 分／付出 ${scoreInfo.centerLoss} 分／淨${scoreInfo.net >= 0 ? '收穫' : '付出'} ${Math.abs(scoreInfo.net)} 分`;
+  if (scoreInfo.halfBoard) {
+    scorePart += '\n　（盤中有好朋友格，已減半計算）';
+  }
+  if (scoreInfo.scoreNote) {
+    scorePart += `\n\n⚠ **${scoreInfo.scoreNote}**`;
+    scorePart += `\n　調整後收穫 ${scoreInfo.adjustedGain.toFixed(1)} 分／付出 ${scoreInfo.adjustedLoss.toFixed(1)} 分／淨${scoreInfo.adjustedNet >= 0 ? '收穫' : '付出'} ${Math.abs(scoreInfo.adjustedNet).toFixed(1)} 分`;
+  }
+  // 用書版的「40分≈1000萬」金額換算
+  if (Math.abs(scoreInfo.adjustedNet) >= 10) {
+    const equivMillion = (Math.abs(scoreInfo.adjustedNet) / 40 * 1000).toFixed(0);
+    scorePart += `\n\n💰 以「40分≈1000萬」換算 → 約 ${equivMillion} 萬規模${scoreInfo.adjustedNet < 0 ? '的付出/應賺未賺' : '的收穫'}。（僅供量化參考，金額實際視題目論定）`;
+  }
+  sections.push({title:'④ 付出與收穫', content: scorePart});
+
+  // ⑤ 健康
+  let healthPart = '';
+  // 中央受威脅 = 最明顯
+  const centerThreats = POSITIONS.filter(p => p !== 'center' && board[p] && canEat(board, p, 'center'));
+  if (centerThreats.length > 0) {
+    healthPart += `中央 ${center.name}（${center.element}行）對應${center.organ}。\n`;
+    for (const p of centerThreats) {
+      const protected_ = isProtected(board, 'center', p);
+      const piece = board[p];
+      const meaning = {
+        shi:'容易有名譽受損、糾紛、官司，或血光、開刀',
+        che:'容易有車關、交通意外，肝膽免疫系統壓力',
+        ma:'容易有意外受傷、卡陰、犯小人',
+        pao:'容易卡陰、有無形干擾，腎/泌尿/婦科/攝護腺較弱',
+        shuai:'重大關卡',
+        xiang:'心血管、血液循環',
+        bing:'消化系統、脾胃壓力'
+      }[piece.kind] || '';
+      healthPart += `\n　⚠ ${POS_LABEL[p].split('(')[0]} ${piece.name} 威脅中央 → ${meaning}${protected_ ? '（有保護，影響減半）' : ''}`;
+    }
+  } else {
+    healthPart += `中央沒有受到威脅，主要看消耗格與五行平衡。\n`;
+  }
+  // 五行警示
+  for (const issue of fiveInfo.issues) healthPart += `\n　🌿 ${issue.text}`;
+  // 暴動格、消耗格附身體影響
+  if (patterns.some(p => p.name.includes('暴動'))) {
+    healthPart += `\n　💢 有暴動格 → 整體氣血循環、情緒穩定度都較不順。`;
+  }
+  // 陰陽不協調建議
+  const colorCount = {red:0, black:0};
+  for (const p of POSITIONS) if (board[p]) colorCount[board[p].color]++;
+  if (Math.abs(colorCount.red - colorCount.black) >= 3) {
+    if (colorCount.red > colorCount.black) {
+      healthPart += `\n　🌱 紅多 → 建議${subj}多踩踩草地、泥土地，把身上多餘的能量釋放出來。`;
+    } else {
+      healthPart += `\n　☀️ 黑多 → 建議${subj}多曬太陽（尤其曬背），補充能量。`;
+    }
+  }
+  sections.push({title:'⑤ 健康', content: healthPart});
+
+  // 蔡建安老師結語：療癒淨化建議
+  const closing = [];
+  closing.push(`\n📿 **整體建議（蔡建安老師心法）**`);
+  closing.push(`卦象只是讓我們看到我們意識資料庫裡有這樣的資料，只要運用我們所教的方式來做清理，就可以改變這些狀態。`);
+  closing.push(`\n建議${subj}針對以下狀態做療癒淨化：`);
+  if (patterns.some(p => p.name.includes('消耗'))) closing.push('• 消耗格 → 清掉消耗的資料庫');
+  if (patterns.some(p => p.name === '通吃格')) closing.push('• 通吃格 → 做寫話「請留一線給人，迴向給眾生」，避免最後歸零');
+  if (patterns.some(p => p.name === '被通吃格')) closing.push('• 被通吃格 → 立即做療癒淨化＋顯化貴人');
+  if (patterns.some(p => p.name.includes('困擾'))) closing.push('• 困擾格 → 做顯化「某某某與某某某關係的貴人與可能性」');
+  if (patterns.some(p => p.name === '分離格')) closing.push('• 分離格 → 清掉跟對方價值觀不同的資料');
+  if (patterns.some(p => p.name.includes('暴動'))) closing.push('• 暴動格 → 清掉偏執認知和情緒的資料');
+  if (patterns.some(p => p.name === '生死關')) closing.push('• ⚠ 生死關 → 必須做療癒淨化＋被通吃格的資料清理，不可忽視');
+  if (patterns.some(p => p.name === '修行緣分格')) closing.push('• 修行緣分 → ${subj}有跟神明連結的緣分，可以多做修行功課');
+  if (Math.abs(colorCount.red - colorCount.black) >= 3) closing.push('• 陰陽不協調 → 多做療癒淨化清理意識資料庫，再操作下載補充能量');
+  closing.push(`\n別忘了：「${subjPossessive}本質是完美的、健康的、豐盛的，只是資料庫裡有些什麼，所以才會經驗這樣的劇情。」清掉這些資料，人生劇情就會改善。`);
+  sections.push({title:'蔡建安老師結語', content: closing.join('\n')});
+
+  return sections;
 }
 
 /* ===== UI ===== */
@@ -1593,7 +2001,7 @@ function buildQuestionAnswer(b, patterns, scoreInfo, fiveInfo, qType, qText) {
         verdictBadge = '<span class="badge badge-info">平穩</span>';
         verdictText = '運勢平穩，沒有大起大落。';
       }
-      if (isCross) analysis.push('✓ 十字天柱格 → 天時對了、有老天助力。');
+      if (isCross) analysis.push('✓ 十字天助格 → 天時對了、有老天助力。');
       if (isUmbrella) analysis.push('☂ 雨傘格 → 有人罩，但可能壓抑。');
       if (isExhaust) analysis.push('⚠ 消耗格 → 想太多、自己內耗，需要清理。');
       if (isHardship) {
@@ -1655,11 +2063,18 @@ function renderAnalysis(b) {
   const interactionNarrative = buildInteractionNarrative(b, scoreInfo);
   const lifeNarratives = buildLifeNarratives(b, patterns, scoreInfo, fiveInfo);
 
-  // 取得問題與卦種
+  // 取得問題、卦種、卜主資訊（書版 v2.0）
   const qText = (document.getElementById('question-text')?.value || '').trim();
   let qType = document.getElementById('question-type')?.value || 'auto';
   if (qType === 'auto') qType = detectQuestionType(qText);
+  const qContext = {
+    gender: document.getElementById('querent-gender')?.value || '',
+    married: document.getElementById('querent-married')?.value || ''
+  };
   const answer = buildQuestionAnswer(b, patterns, scoreInfo, fiveInfo, qType, qText);
+
+  // 蔡建安老師五段式解盤敘述（書版 v2.0）
+  const caiSections = buildCaiJiananNarrative(b, patterns, scoreInfo, fiveInfo, qContext);
 
   let html = '';
 
@@ -1686,6 +2101,18 @@ function renderAnalysis(b) {
     html += '<div class="item muted">💡 在上方填入問題後，這裡會出現「🎯 針對問題的解讀」。</div>';
     html += '</div>';
   }
+
+  // 🌸 蔡建安老師口吻五段式解盤（書版 v2.0）
+  html += '<div class="section" style="background:linear-gradient(135deg,#fff8e0,#fce8d0);padding:14px;border-radius:8px;border-left:5px solid #c8102e;margin-top:14px;">';
+  html += `<div class="section-title" style="color:#6b3410;font-size:16px;">🌸 蔡建安老師五段式解盤（書版 v2.0）</div>`;
+  html += `<div style="font-size:12px;color:#888;margin-bottom:10px;">採用《改寫人生的象棋卜卦》第 7 章標準解盤順序：狀態→互動→格局→付出收穫→健康</div>`;
+  for (const sec of caiSections) {
+    html += `<div style="margin-top:12px;padding:10px;background:#fff;border-radius:6px;border-left:3px solid #d4b896;">`;
+    html += `<div style="font-weight:600;color:#6b3410;margin-bottom:6px;">${sec.title}</div>`;
+    html += `<div style="white-space:pre-line;line-height:1.7;font-size:14px;color:#333;">${sec.content}</div>`;
+    html += `</div>`;
+  }
+  html += '</div>';
 
   // 卦象結構
   html += '<div class="section"><div class="section-title">卦象結構</div>';
@@ -1800,6 +2227,9 @@ function setupSingle() {
   };
   qText.addEventListener('input', updateHint);
   qType.addEventListener('change', updateHint);
+  // 卜主性別 / 婚姻狀態變化也重新渲染
+  document.getElementById('querent-gender')?.addEventListener('change', () => renderAnalysis(board));
+  document.getElementById('querent-married')?.addEventListener('change', () => renderAnalysis(board));
   updateHint();
 }
 
@@ -2112,26 +2542,58 @@ function renderReference() {
   }
   html += '</div></div>';
 
-  html += `<div class="section"><div class="section-title">核心格局速查</div>
-    <div class="item">📌 <b>好朋友格</b>：同字異色配對（中-外圍）→ 互相欣賞、整盤分數減半</div>
-    <div class="item">📌 <b>好人緣格</b>：同字異色斜對 → 人脈、間接幫助</div>
-    <div class="item">📌 <b>互相欣賞格</b>：黑士+紅俥 / 紅仕+黑車 → 彼此欣賞、有合作空間</div>
-    <div class="item">📌 <b>三人同心格</b>：三隻同色同字 → 同色=已準備好；異色=外在準備好</div>
-    <div class="item warn">📌 <b>消耗格</b>：兩隻同色同字（內耗：與中央同色／外耗：與中央異色）</div>
-    <div class="item warn">📌 <b>破壞格</b>：同字 1 紅 2 黑 或 1 黑 2 紅 → 含消耗</div>
-    <div class="item warn">📌 <b>困擾格</b>：兩組好朋友 → 關係牽扯多、勞心勞力</div>
-    <div class="item warn">📌 <b>通吃格</b>：中央吃光對方且對方無保護 → 短期強，最後可能歸零</div>
-    <div class="item warn">📌 <b>被通吃格</b>：中央被全吃光無保護 → 大限／生死關／努力歸零</div>
-    <div class="item">📌 <b>雨傘格</b>：上左右三同色包圍中央異色 → 紅傘=別人看好；黑傘=別人不看好</div>
-    <div class="item good">📌 <b>勝利格</b>：左右下同色 V 字 → 事情容易成局</div>
-    <div class="item good">📌 <b>明君格</b>：將+卒 或 帥+兵 同色 → 有方向、有領導力</div>
-    <div class="item warn">📌 <b>暴君格</b>：將/帥無兵卒搭配 → 強勢、自我、女命盤+中央同色易離婚</div>
-    <div class="item warn">📌 <b>分離格</b>：同字異色被中央隔開（不含炮包）→ 緣分薄、易斷</div>
-    <div class="item">📌 <b>桃花格</b>：炮帥隔空=正桃花；炮馬斜=偏桃花（僅問感情卦適用）</div>
-    <div class="item warn">📌 <b>陰陽不協調</b>：4-1 或 5-0 → 紅多踩土壤、黑多曬背</div>
-    <div class="item warn">📌 <b>悔恨格</b>：全紅或全黑 → 預期落差大、老天爺不答</div>
-    <div class="item good">📌 <b>富貴格</b>：將+士+相 同盤 → 有天助、有人幫忙</div>
-    <div class="item good">📌 <b>十字天柱格</b>：中軸 3 隻同色 → 天時對了</div>
+  html += `<div class="section"><div class="section-title">26 格局速查（書版 v2.0 — 蔡建安《改寫人生的象棋卜卦》）</div>
+    <div class="item">📌 <b>① 好朋友格</b>：同字異色配對（將仕象車兵=中外圍相鄰／馬=斜對／炮=跨中央有跳板）→ 互相欣賞，整盤分數減半</div>
+    <div class="item">📌 <b>② 好人緣格</b>：同字異色但不符好朋友位置（看得到=相鄰或斜對；炮包除外）→ 人緣不錯，可互吃</div>
+    <div class="item">📌 <b>③ 互相欣賞格</b>：黑士+紅俥 / 紅仕+黑車 → 彼此欣賞，能降低威脅能量</div>
+    <div class="item warn">📌 <b>④ 消耗格</b>：兩隻同色同字（不論相鄰、斜對、分離）強度：相鄰>斜對>分離；內耗=同中央色／外耗=異色</div>
+    <div class="item warn">📌 <b>⑤ 破壞格</b>：同字 1+2 配置 → 本身含消耗，破壞彼此關係</div>
+    <div class="item warn">📌 <b>⑥ 分離格</b>：好朋友被中央隔開（炮包除外）→ 價值觀不同、想法相牴觸</div>
+    <div class="item warn">📌 <b>⑦ 困擾格</b>：兩組好朋友（含 2 兵 2 卒）→ 困擾能量強；常有做選擇/下決定的困擾</div>
+    <div class="item good">📌 <b>⑧ 明君格</b>：將看到卒 或 帥看到兵 → 將不吃兵卒，公公服侍皇帝。隔山看不到=暴動格</div>
+    <div class="item warn">📌 <b>⑨ 暴動格</b>：將/帥看不到同色兵卒。中央=自己暴動（偏執做錯決定）；非中央=外在暴動（外在變數）</div>
+    <div class="item warn">📌 <b>⑩ 通吃格</b>：對方所有棋無保護/牽制/格局限制，可被通吃 → <b>收穫×20%</b>（最後易歸零）</div>
+    <div class="item warn">📌 <b>⑪ 被通吃格</b>：自己所有棋被吃光（中央被吃也算）→ <b>收穫頂多 20%</b>（甚至負債）</div>
+    <div class="item">📌 <b>⑫ 事業格</b>（書版新）：俥傌炮/車馬包同盤 → 認真做事業的態度。女命盤總格+中央俥傌炮=有離婚資料</div>
+    <div class="item good">📌 <b>⑬ 富貴格</b>：將+士+相 同盤（不論顏色）→ 不管做什麼都有人來幫</div>
+    <div class="item">📌 <b>⑭ 桃花格</b>：炮帥/包將相鄰=偏桃花；隔山=正桃花。對方炮包吃我們將/帥=爛桃花</div>
+    <div class="item warn">📌 <b>⑮ 全黑全紅格／悔恨格</b>：5 子全同色 → 顯化動能不足，<b>收穫付出皆×20%</b>。事件卦=老天不答</div>
+    <div class="item warn">📌 <b>⑯ 離婚格</b>（女命盤總格）：6 種狀況累計（黑士黑車為首/暴動/分離/事業格/被通吃/悔恨）次數=離婚次數</div>
+    <div class="item warn">📌 <b>⑰ 眾星拱月格／鬱卒格</b>：唯一不同色在中間。中央黑+外圍紅=眾星拱月（外好內鬱）；中央紅+外圍黑=鬱卒（外不看好）。陰陽不協調 <b>×50%</b></div>
+    <div class="item">📌 <b>⑱ 一枝獨秀格</b>：唯一不同色在外圍（不會被吃）→ 獨樹一格。陰陽不協調 <b>×50%</b>。+好朋友格=雙生火焰</div>
+    <div class="item good">📌 <b>⑲ 三人同心格</b>：3 隻同色同字（限兵卒）→ 同色=自己準備好；異色=外在準備好</div>
+    <div class="item good">📌 <b>⑳ 大師格</b>（命盤總格）：中央非兵卒+外圍4兵卒 → 凸顯卦主特質。中央兵卒則進化為皇帝格</div>
+    <div class="item good">📌 <b>㉑ 皇帝格</b>（命盤總格）：5 子全為兵卒 → 五隻地格踏實，做什麼都容易成功</div>
+    <div class="item good">📌 <b>㉒ 勝利格</b>：②③⑤同色（V 字）→ 想做的事容易成局；同色=靠自己；好朋友=靠人助</div>
+    <div class="item">📌 <b>㉓ 雨傘格</b>：②③④同色 → 有天助（撐傘看不到天，心情會悶）。命盤最後一局=這輩子是輪迴最後一世</div>
+    <div class="item good">📌 <b>㉔ 十字天助格</b>：①②③ 或 ①④⑤ 同色 → 有天助、有老天看顧、時機對了</div>
+    <div class="item good">📌 <b>㉕ 修行緣分格</b>（命盤）：中央相象+同色傌馬炮包/中央傌馬炮包/有雨傘十字天助 → 跟神明有連結</div>
+    <div class="item warn">📌 <b>㉖ 生死關</b>（命盤十年運）：被通吃+中央無能力反吃跑掉 → 十年運中的重大關卡（可能壽終）</div>
+  </div>`;
+
+  // 書版 v2.0 — 問事 5 規則
+  html += `<div class="section"><div class="section-title">問事 5 規則（書版 v2.0 — 蔡建安老師）</div>
+    <div class="item warn">📌 <b>規則一：命盤限本人抓棋，問事單卦只能問自己或直系血親</b><br>例外：卦主不便時可說「允許某某代我抓棋」（僅限問事單卦，年運/命盤不可）</div>
+    <div class="item">📌 <b>規則二：可與其它占卜搭配</b>（生命靈數、後天五行等互補）</div>
+    <div class="item warn">📌 <b>規則三：問題問得越明確越好</b><br>❌ 差：跟著朋友投資房地產會不會賺錢？<br>✅ 好：朋友跟我說的「那個房地產項目」，我投資的話會不會賺錢？</div>
+    <div class="item">📌 <b>規則四：視情況需設時間</b><br>例：我做這個行業，一年之內有沒有辦法讓我賺到 100 萬？<br>但有些題目（如統一 7-11 第八年才賺錢）設時間反而會侷限</div>
+    <div class="item">📌 <b>規則五：選擇題需同時卜幾個卦做比較</b><br>選項 ≤3 個：棋子可不放回直接拿下一組<br>選項 ≥4 個：先記錄前兩個，把棋子放回再問後兩個</div>
+  </div>`;
+
+  // 書版 v2.0 — 問法善巧
+  html += `<div class="section"><div class="section-title">問法善巧（書版 v2.0 — 取代「要不要做」式問法）</div>
+    <div class="item warn">❌ 不精準問法：要不要做這件事？／他愛不愛我？／某人會不會選上？</div>
+    <div class="item good">✅ 善巧問法：<br>　• 我去做這件事好不好？<br>　• 我做這件事會呈現什麼狀態？<br>　• 我做這件事有沒有什麼要注意的？<br>　• 我會不會跟某某結婚？／某某的決定對我是否有好影響？<br>　• 配偶/兄弟姐妹改成「他做的事會不會讓我開心」這種延伸到自己身上的問法</div>
+    <div class="item info">蔡建安心法：「卜卦的定位不是在幫別人算命，而是在幫助一個人『認識自己』」</div>
+  </div>`;
+
+  // 書版 v2.0 — 標準解卦五段式順序
+  html += `<div class="section"><div class="section-title">標準解卦五段式順序（書版 v2.0）</div>
+    <div class="item">① <b>狀態</b>：從中央以及與中央同色的棋子論卦主特質</div>
+    <div class="item">② <b>互動關係</b>：跟身邊的人的互動（吃、被吃、影響力）</div>
+    <div class="item">③ <b>格局及需注意的狀態</b>：含犯小人、做錯決定、需留意的意外</div>
+    <div class="item">④ <b>付出與收穫</b>：含保護、抗衡、牽制、特殊格局比例（通吃20%/悔恨20%/陰陽不協調50%）</div>
+    <div class="item">⑤ <b>健康</b>：1.中央受威脅最明顯 2.消耗格、暴動格 3.陰陽是否協調</div>
   </div>`;
 
   html += `<div class="section"><div class="section-title">問題寫法善巧（不能問什麼？怎麼改寫？）</div>
@@ -2167,7 +2629,104 @@ function renderReference() {
     <div class="item">🔮 <b>命盤</b> 看一輩子，32 支棋拆 7 局，一輩子只能摸一次（除非顯化淨化過）</div>
     <div class="item">❓ <b>事件卦</b> 問具體事，全紅全黑 = 老天爺不答可換問法重來</div>
     <div class="item">🔄 <b>前世因果</b> 看前世身分、跟某人的前世關係</div>
-    <div class="item warn">⚠ 一事一卦，不準也不能重複問同件事</div>
+    <div class="item info">🆕 <b>療癒淨化效果卦</b>（書版 v2.0）：問「我療癒淨化的效果如何？」只看收穫不算付出</div>
+    <div class="item warn">⚠ 一事一卦，不準也不能重複問同件事（除非設定期間如「3個月後再卜」或療癒淨化後）</div>
+    <div class="item info">🆕 <b>命盤重排判定</b>：療癒淨化後想重排命盤，先卜單卦，中央=兵卒+乾淨好朋友格 → 可重排</div>
+  </div>`;
+
+  // 書版 v2.0 — 吃與被吃棋子的衍伸解釋表
+  html += `<div class="section"><div class="section-title">吃與被吃棋子的衍伸解釋表（書版 v2.0 — 第7章）</div>
+    <div style="overflow-x:auto;">
+    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <thead style="background:#fce8d0;color:#6b3410;">
+        <tr><th style="padding:8px;border:1px solid #d4b896;text-align:left;">棋子</th><th style="padding:8px;border:1px solid #d4b896;text-align:left;">吃到（有收穫）</th><th style="padding:8px;border:1px solid #d4b896;text-align:left;">被吃（要付出）</th></tr>
+      </thead>
+      <tbody>
+        <tr><td style="padding:6px;border:1px solid #d4b896;background:#ffe6e6;"><b>帥/將</b></td><td style="padding:6px;border:1px solid #d4b896;">無（將帥不吃兵卒）</td><td style="padding:6px;border:1px solid #d4b896;">身邊的人易執著、外在有較大壓力</td></tr>
+        <tr><td style="padding:6px;border:1px solid #d4b896;background:#ffe6e6;"><b>仕/士</b></td><td style="padding:6px;border:1px solid #d4b896;">得到名聲、權力、文憑</td><td style="padding:6px;border:1px solid #d4b896;">名譽受損、糾紛、官司、違規。我們的仕/士被吃：常需處理人的紛爭。被仕/士吃：易血光之災</td></tr>
+        <tr><td style="padding:6px;border:1px solid #d4b896;background:#ffe6e6;" rowspan="2"><b>仕/士</b><br>（命盤）</td><td style="padding:6px;border:1px solid #d4b896;" colspan="2">命盤過局往上：我們的炮/包過局往上吃到仕/士 → 有出國讀書的機會</td></tr>
+        <tr><td colspan="2"></td></tr>
+        <tr><td style="padding:6px;border:1px solid #d4b896;background:#ffe6e6;"><b>相/象</b></td><td style="padding:6px;border:1px solid #d4b896;">有置產的機會、有宗教或修行的機緣</td><td style="padding:6px;border:1px solid #d4b896;">會有火氣大的問題</td></tr>
+        <tr><td style="padding:6px;border:1px solid #d4b896;background:#ffe6e6;"><b>俥/車</b></td><td style="padding:6px;border:1px solid #d4b896;">得到名聲、權力</td><td style="padding:6px;border:1px solid #d4b896;">行車糾紛、車關（被俥車吃 或 我們的俥車被吃皆同）</td></tr>
+        <tr><td style="padding:6px;border:1px solid #d4b896;background:#ffe6e6;"><b>傌/馬</b></td><td style="padding:6px;border:1px solid #d4b896;">人脈擴展、許多善巧、創意、點子</td><td style="padding:6px;border:1px solid #d4b896;">被傌/馬吃：意外受傷、卡陰、犯小人、投資失利。我們的傌/馬被吃：意外受傷</td></tr>
+        <tr><td style="padding:6px;border:1px solid #d4b896;background:#ffe6e6;"><b>傌/馬</b>主動</td><td style="padding:6px;border:1px solid #d4b896;" colspan="2">我們的傌/馬吃對方任何棋子：透過創意、善巧、資源整合而獲利</td></tr>
+        <tr><td style="padding:6px;border:1px solid #d4b896;background:#ffe6e6;"><b>炮/包</b></td><td style="padding:6px;border:1px solid #d4b896;">受人喜歡，有許多善巧、創意、點子</td><td style="padding:6px;border:1px solid #d4b896;">被炮/包吃：卡陰、犯小人、投資失利</td></tr>
+        <tr><td style="padding:6px;border:1px solid #d4b896;background:#ffe6e6;"><b>炮/包</b>主動</td><td style="padding:6px;border:1px solid #d4b896;" colspan="2">我們的炮/包吃對方任何棋子：透過創意、善巧、投資而獲利</td></tr>
+        <tr><td style="padding:6px;border:1px solid #d4b896;background:#ffe6e6;"><b>炮/包</b>桃花</td><td style="padding:6px;border:1px solid #d4b896;" colspan="2">被炮/包吃到我們的將/帥 → 容易爛桃花，因談感情對象而損失</td></tr>
+        <tr><td style="padding:6px;border:1px solid #d4b896;background:#ffe6e6;" colspan="3"><b>炮/包過局往上（命盤）</b>：我們的炮/包過局往上吃對方包/炮或將/帥 → 投資獲利機會（已婚→外遇）；對方炮/包過局往上吃我們將/帥 → 做錯投資+爛桃花</td></tr>
+        <tr><td style="padding:6px;border:1px solid #d4b896;background:#ffe6e6;"><b>兵/卒</b></td><td style="padding:6px;border:1px solid #d4b896;">無</td><td style="padding:6px;border:1px solid #d4b896;">無</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </div>`;
+
+  // 書版 v2.0 — 前世關係判定表
+  html += `<div class="section"><div class="section-title">前世關係判定（書版 v2.0 — 第9章）</div>
+    <div class="item info">前世卦看「卦主-對象」二棋的位置與棋種對應</div>
+    <div class="item"><b>🔴 兵卒（直系血親較多）</b><br>　• ①兵+②卒：對方是你的妻子｜①兵+③卒：對方是兄弟姊妹<br>　• ①卒+③兵：對方是你的老公｜①卒+②兵：對方是兄弟姊妹<br>　• ①+④（中與上）：父母｜①+⑤（中與下）：子女<br>　• ④+⑤（上與下）：祖父母與孫子｜②+③（左右）：非直系血親兄弟姊妹<br>　• 斜對（②④/②⑤/③④/③⑤）：叔伯、姑嬸、舅舅、阿姨、姪子姪女</div>
+    <div class="item"><b>🟣 炮包（情人類）</b><br>　• 炮包相鄰／偏桃花（①②/①③/①④/①⑤）：短暫的情人<br>　• 炮包隔山／正桃花（②③/④⑤）：外遇對象、情人或小妾<br>　• 炮包斜對／偏桃花（②④/②⑤/③④/③⑤）：有情慾但沒有真正交流的對象</div>
+    <div class="item"><b>🟢 傌馬</b><br>　• 相鄰（①②/①③）：短暫的情人<br>　• 上下（①④/①⑤）：有感情、情愫的長輩晚輩<br>　• 斜對（②④/②⑤/③④/③⑤）：長時間的情人<br>　• 分開（②③/④⑤）：喜歡但沒有真正交流的對象</div>
+    <div class="item"><b>🔵 俥車（事業類）</b><br>　• 相鄰（①②/①③）：工作或事業合作夥伴<br>　• 上下（①④/①⑤）：職場上司、下屬或上下游廠商<br>　• 上下②③：職場隔代上司下屬／非直接合作夥伴<br>　• 斜對：非直接合作的上司、下屬</div>
+    <div class="item"><b>🟡 相象（修行類）</b><br>　• 相鄰（①②/①③）：同學、同修<br>　• 上下（①④/①⑤）：師父、徒弟<br>　• ④+⑤：師公、徒孫｜②+③：非同師父之同學<br>　• 斜對：非直接之師父（師叔、師伯）與徒弟</div>
+    <div class="item"><b>🟠 仕士（官場類）</b><br>　• 相鄰：同僚<br>　• 上下：官場的上司、下屬<br>　• ④+⑤：隔代上司下屬｜②+③：非直屬同僚<br>　• 斜對：非直屬上司、下屬</div>
+    <div class="item"><b>🌟 帥將</b>：實際案例太多不同可能，可另外再起一個卦</div>
+    <div class="item info">🌀 <b>一枝獨秀格 + 好朋友格 = 雙生火焰</b>：同一個靈體，分靈投胎來的。但雙生火焰並非靈魂伴侶。常見特點：很多特質相似但互動時常互看不順眼。</div>
+  </div>`;
+
+  // 書版 v2.0 — 暴動格人體部位對照
+  html += `<div class="section"><div class="section-title">暴動格人體部位對應（書版 v2.0 — 鏡像）</div>
+    <div class="item info">棋盤位置 ↔ 人體部位（卦象的位置與人體左右剛好相反，因為棋盤是「面對我們的人」）</div>
+    <div class="item">① 中央 → 脖子以下、肚臍以上（軀幹中央氣血循環）</div>
+    <div class="item">② 左 → 身體<b>右側</b>（鏡像）</div>
+    <div class="item">③ 右 → 身體<b>左側</b>（鏡像）</div>
+    <div class="item">④ 上 → 頭部</div>
+    <div class="item">⑤ 下 → 肚臍以下、下肢</div>
+    <div class="item warn">命盤十年運中如果有暴動 → 像有顆地雷，可能引爆在家庭、事業、健康或財富，可看上一局兵卒情況輕重</div>
+  </div>`;
+
+  // 書版 v2.0 — 療癒淨化效果判定表
+  html += `<div class="section"><div class="section-title">療癒淨化效果判定表（書版 v2.0 — 第10章）</div>
+    <div class="item info">問法：「<b>我療癒淨化／刪除資料的效果如何？</b>」<br>解卦：<b>只看「有沒有得吃」或「有沒有收穫」，不算付出</b></div>
+    <div class="item">📌 <b>兵卒好朋友格</b>：方法正確且已清理到真正根源</div>
+    <div class="item">📌 <b>其他好朋友格 / 相鄰明君格</b>：方法跟方向是正確的</div>
+    <div class="item">📌 <b>沒有好朋友格 / 沒有相鄰明君格</b>：方向方法可再調整。但分數很高也可看到改善</div>
+    <div class="item warn">📌 <b>五支全黑或全紅</b>：重新卜一卦</div>
+    <div style="overflow-x:auto;margin-top:8px;">
+    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <thead style="background:#fce8d0;color:#6b3410;">
+        <tr><th style="padding:6px;border:1px solid #d4b896;">情境</th><th style="padding:6px;border:1px solid #d4b896;">象棋得分</th><th style="padding:6px;border:1px solid #d4b896;">療癒成效</th></tr>
+      </thead>
+      <tbody>
+        <tr><td style="padding:6px;border:1px solid #d4b896;" rowspan="8">無好朋友格<br>無相鄰明君格</td><td style="padding:6px;border:1px solid #d4b896;text-align:center;">未達 20</td><td style="padding:6px;border:1px solid #d4b896;text-align:center;">需調整</td></tr>
+        <tr><td style="padding:6px;border:1px solid #d4b896;text-align:center;">20</td><td style="padding:6px;border:1px solid #d4b896;text-align:center;">60 分</td></tr>
+        <tr><td style="padding:6px;border:1px solid #d4b896;text-align:center;">40</td><td style="padding:6px;border:1px solid #d4b896;text-align:center;">65 分</td></tr>
+        <tr><td style="padding:6px;border:1px solid #d4b896;text-align:center;">60</td><td style="padding:6px;border:1px solid #d4b896;text-align:center;">70 分</td></tr>
+        <tr><td style="padding:6px;border:1px solid #d4b896;text-align:center;">80</td><td style="padding:6px;border:1px solid #d4b896;text-align:center;">75 分</td></tr>
+        <tr><td style="padding:6px;border:1px solid #d4b896;text-align:center;">100</td><td style="padding:6px;border:1px solid #d4b896;text-align:center;">80 分</td></tr>
+        <tr><td style="padding:6px;border:1px solid #d4b896;text-align:center;">120</td><td style="padding:6px;border:1px solid #d4b896;text-align:center;">85 分</td></tr>
+        <tr><td style="padding:6px;border:1px solid #d4b896;text-align:center;">140 以上</td><td style="padding:6px;border:1px solid #d4b896;text-align:center;">90 分</td></tr>
+        <tr><td style="padding:6px;border:1px solid #d4b896;" rowspan="5">好朋友格（非兵卒）<br>相鄰明君格</td><td style="padding:6px;border:1px solid #d4b896;text-align:center;">10 以下</td><td style="padding:6px;border:1px solid #d4b896;text-align:center;">70 分</td></tr>
+        <tr><td style="padding:6px;border:1px solid #d4b896;text-align:center;">30</td><td style="padding:6px;border:1px solid #d4b896;text-align:center;">75 分</td></tr>
+        <tr><td style="padding:6px;border:1px solid #d4b896;text-align:center;">50</td><td style="padding:6px;border:1px solid #d4b896;text-align:center;">80 分</td></tr>
+        <tr><td style="padding:6px;border:1px solid #d4b896;text-align:center;">70</td><td style="padding:6px;border:1px solid #d4b896;text-align:center;">85 分</td></tr>
+        <tr><td style="padding:6px;border:1px solid #d4b896;text-align:center;">90 以上</td><td style="padding:6px;border:1px solid #d4b896;text-align:center;">90 分</td></tr>
+        <tr><td style="padding:6px;border:1px solid #d4b896;background:#e8f5e8;" rowspan="4">兵卒好朋友格</td><td style="padding:6px;border:1px solid #d4b896;text-align:center;">10 以下</td><td style="padding:6px;border:1px solid #d4b896;text-align:center;">80 分</td></tr>
+        <tr><td style="padding:6px;border:1px solid #d4b896;text-align:center;">30</td><td style="padding:6px;border:1px solid #d4b896;text-align:center;">85 分</td></tr>
+        <tr><td style="padding:6px;border:1px solid #d4b896;text-align:center;">50</td><td style="padding:6px;border:1px solid #d4b896;text-align:center;">90 分</td></tr>
+        <tr><td style="padding:6px;border:1px solid #d4b896;text-align:center;">全兵卒混色</td><td style="padding:6px;border:1px solid #d4b896;text-align:center;">90 分</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <div class="item warn" style="margin-top:8px;">⚠ <b>扣分項</b>：消耗格(內外)、困擾格、暴動格、分離格、被通吃格、一枝獨秀格、眾星拱月/鬱卒格、有傌馬/炮包吃到或得到我們好處 → 每出現一項扣 2 分（<b>通吃格不扣</b>）</div>
+    <div class="item info">💡 最高 90 分（人的侷限）。建議每項目至少用掉 2-4 支噴瓶後再卜卦看效果。提醒：勿過於執著療癒淨化的分數</div>
+  </div>`;
+
+  // 書版 v2.0 — 卦象中不同位置代表的角色（依卜主性別+婚姻狀態）
+  html += `<div class="section"><div class="section-title">位置代表的角色（書版 v2.0 — 第5章）</div>
+    <div class="item info">通用：①中=自己／④上=長輩(年齡>10歲)／⑤下=晚輩(年齡<10歲)<br>口訣：左手比較沒力 → ②左=女生；右手比較有力 → ③右=男生</div>
+    <div class="item"><b>👨 男性卜主</b><br>　• 未婚：②姊妹/女朋友/女性平輩｜③兄弟/男性平輩<br>　• 已婚：②妻子/女性平輩｜③兄弟/男性平輩<br>　• 男性結婚前後跟兄弟關係不變，但跟姊妹會不一樣</div>
+    <div class="item"><b>👩 女性卜主</b><br>　• 未婚：②姊妹/女性平輩｜③兄弟/男朋友/男性平輩<br>　• 已婚：②兄弟姊妹/女性平輩｜③丈夫/男性平輩<br>　• 女性結婚前後跟姊妹關係不變，但跟兄弟會不一樣（看法位置從③改看②）</div>
+    <div class="item warn">⚠ 在系統的單卦面板上方「卜主性別」「婚姻狀態」下拉選擇後，五段式解盤的「② 互動關係」會自動套用對應的角色</div>
   </div>`;
 
   target.innerHTML = html;
