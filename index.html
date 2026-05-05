@@ -648,24 +648,35 @@ function isFriendPair(p1, p2) {
   return p1.kind === p2.kind;
 }
 
-// 嚴格判定「好朋友格」（依棋種要求位置）
-//   將/帥、仕/士、象/相、俥/車、兵/卒：上下左右相鄰（中-外圍）
-//   馬/傌：要斜相鄰（5 子盤十字形無斜相鄰位置 → 永遠不會是好朋友格）
-//   炮/包：要中間隔一隻棋（即跨中央 + 中央有棋當跳板）
+// 兩個外圍位置是否「斜對相鄰」（上-左、上-右、下-左、下-右）
+function isDiagonalPair(a, b) {
+  const diagonals = [
+    ['top','left'], ['top','right'],
+    ['bottom','left'], ['bottom','right']
+  ];
+  return diagonals.some(([x,y]) =>
+    (a===x && b===y) || (a===y && b===x)
+  );
+}
+
+// 嚴格判定「好朋友格」（依棋種要求位置，2026-05-05 v3）
+//   將/帥、仕/士、象/相、俥/車、兵/卒：中-外圍上下左右相鄰
+//   馬/傌：要「斜相鄰」（外圍對外圍：上+左、上+右、下+左、下+右）
+//   炮/包：要「中間隔一隻棋」（上+下且中央有棋 / 左+右且中央有棋）
 function isFriendPairStrict(b, p1pos, p2pos) {
   const p1 = b[p1pos], p2 = b[p2pos];
   if (!isFriendPair(p1, p2)) return false;
   const kind = p1.kind;
   if (kind === 'ma') {
-    // 馬要斜相鄰，5 子盤無斜方向 → 永遠不成立好朋友格
-    return false;
+    // 馬要斜對相鄰（上-左、上-右、下-左、下-右）
+    return isDiagonalPair(p1pos, p2pos);
   }
   if (kind === 'pao') {
-    // 炮要中間隔一隻棋（跨中央 + 中央有棋當跳板）
+    // 炮要中間隔一隻棋（上+下或左+右，且中央有棋當跳板）
     const mid = getMiddle(p1pos, p2pos);
     return mid !== null && b[mid] !== null;
   }
-  // 將仕象車兵：上下左右相鄰才是好朋友（中-外圍直接相鄰）
+  // 將仕象車兵：中-外圍上下左右相鄰才是好朋友
   return isAdjacent(p1pos, p2pos);
 }
 
@@ -711,7 +722,7 @@ function detectPatterns(board) {
   if (friendPairs.length > 0) {
     const detail = friendPairs.map(p => {
       const k = board[p[0]].kind;
-      const tag = k === 'pao' ? '隔空' : k === 'ma' ? '斜對' : '相鄰';
+      const tag = k === 'pao' ? '隔中央有跳板' : k === 'ma' ? '斜對相鄰' : '中-外圍相鄰';
       return `${board[p[0]].name}+${board[p[1]].name}(${tag})`;
     }).join('、');
     result.push({type:'good', name:'好朋友格', desc:`${friendPairs.length} 組（${detail}）。互相欣賞、有保護，整盤分數計算減半。`});
@@ -720,9 +731,15 @@ function detectPatterns(board) {
     const detail = goodLuckPairs.map(p => {
       const k = board[p[0]].kind;
       let tag = '';
-      if (k === 'ma') tag = '上下左右(非斜)';
-      else if (k === 'pao') tag = '相鄰(無跳板)';
-      else tag = '外圍對外圍';
+      if (k === 'ma') {
+        // 馬：非斜對的同字異色
+        tag = '上下/左右相鄰(非斜)';
+      } else if (k === 'pao') {
+        // 炮：非跨中央有跳板的同字異色
+        tag = '中-外圍 或 中央無跳板';
+      } else {
+        tag = '外圍對外圍';
+      }
       return `${board[p[0]].name}+${board[p[1]].name}(${tag})`;
     }).join('、');
     result.push({type:'good', name:'好人緣格', desc:`${goodLuckPairs.length} 組（${detail}）。人緣不錯、間接幫助。`});
