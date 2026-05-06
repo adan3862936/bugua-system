@@ -435,6 +435,72 @@
     white-space: nowrap;
   }
 
+  /* 顯化淨化建議（咒輪紙內容 + 念誦內容） */
+  .purification-card { border-left-color: #d4a574 !important; background: #fffbf3; }
+  .purification-card .purif-title { color: #8b4513; font-weight:700; font-size:16px; }
+  .purification-card .purif-section {
+    margin-top: 12px;
+    padding: 10px 12px;
+    background: #fff;
+    border-radius: 6px;
+    border-left: 3px solid #c0392b;
+  }
+  .purification-card .purif-h {
+    color: #c0392b;
+    font-weight: 700;
+    font-size: 14px;
+    margin-bottom: 6px;
+  }
+  .purification-card .purif-zhuluen {
+    background: linear-gradient(135deg, #fff5e1 0%, #ffe8c4 100%);
+    border: 2px dashed #d4a574;
+    padding: 12px 14px;
+    border-radius: 8px;
+    margin: 8px 0;
+    font-size: 14px;
+    line-height: 1.85;
+    color: #6b3410;
+    text-align: center;
+  }
+  .purification-card .purif-zhuluen .zl-tag {
+    display:inline-block;
+    background:#c0392b;
+    color:#fff;
+    padding:2px 8px;
+    border-radius:10px;
+    font-size:11px;
+    margin-bottom:6px;
+  }
+  .purification-card .purif-quote {
+    background: #f8f4ec;
+    padding: 10px 14px;
+    border-left: 3px solid #8b4513;
+    margin: 6px 0;
+    font-size: 13px;
+    line-height: 1.85;
+    color: #3a3a3a;
+    white-space: pre-line;
+  }
+  .purification-card .purif-step-num {
+    display:inline-block;
+    background:#8b4513;
+    color:#fff;
+    border-radius:50%;
+    width:22px;
+    height:22px;
+    text-align:center;
+    line-height:22px;
+    font-size:12px;
+    margin-right:6px;
+    font-weight:700;
+  }
+  .purification-card .purif-tip {
+    color: #888;
+    font-size: 11.5px;
+    font-style: italic;
+    margin-top: 4px;
+  }
+
   /* 字義說明 */
   .piece-meta {
     margin-top: 10px;
@@ -3583,6 +3649,251 @@ function buildMingeTable(layerData) {
   return html;
 }
 
+/* ===== 顯化淨化建議（書本第 10 章 P22-P29 + 療癒淨化與顯化資料夾 8 張範本學習） =====
+   依命盤觸發劇情自動產出：
+   1. 咒輪紙內容（多張，依主題分類：總格/學習/情感/事業/運勢逐十年）
+   2. 完整療癒淨化操作步驟（5 步：寫咒輪紙→下定義→做交託→噴瓶+念誦+迴向→火化）
+   3. 顯化操作步驟（5 步：寫咒輪紙→下定義→做交託→噴瓶顯化念誦→火化）
+   4. 陰陽協調建議（依總格顏色判讀）
+   5. 注意事項與效果評估
+*/
+function buildPurificationGuide(layerData, querentName) {
+  const ctxByIdx = {};
+  for (const ld of layerData.layers) {
+    ctxByIdx[ld.idx] = buildMingeContext(ld.lb, ld.patterns, ld.scoreInfo, ld.fiveInfo);
+  }
+  const totalCtx = ctxByIdx[1];
+  if (!totalCtx) return '';
+
+  const NAME = querentName || '○○○';
+
+  // 收集已觸發的劇情，依主題分類
+  const triggered = {
+    'total-trait':   MINGE_TOTAL_TRAIT.filter(it => { try { return it.cond(totalCtx); } catch(e){return false;} }),
+    'total-people':  MINGE_TOTAL_PEOPLE.filter(it => { try { return it.cond(totalCtx); } catch(e){return false;} }),
+    'total-overall': MINGE_TOTAL_OVERALL.filter(it => { try { return it.cond(totalCtx); } catch(e){return false;} }),
+    'total-health':  MINGE_TOTAL_HEALTH.filter(it => { try { return it.cond(totalCtx); } catch(e){return false;} }),
+    'study':   ctxByIdx[2] ? MINGE_STUDY.filter(it => { try { return it.cond(ctxByIdx[2]); } catch(e){return false;} }) : [],
+    'emotion': ctxByIdx[3] ? MINGE_EMOTION.filter(it => { try { return it.cond(ctxByIdx[3]); } catch(e){return false;} }) : [],
+    'career':  ctxByIdx[4] ? MINGE_CAREER.filter(it => { try { return it.cond(ctxByIdx[4]); } catch(e){return false;} }) : [],
+  };
+  // 運勢逐十年：每條目對應「在哪些十年觸發」
+  const destinyByLayer = {};  // {idx: [items]}
+  for (let idx = 2; idx <= 8; idx++) {
+    const ctx = ctxByIdx[idx];
+    if (!ctx) continue;
+    destinyByLayer[idx] = MINGE_DESTINY.filter(it => { try { return it.cond(ctx); } catch(e){return false;} });
+  }
+
+  // 統計
+  const totalCount = Object.values(triggered).reduce((a,b)=>a+b.length, 0)
+                    + Object.values(destinyByLayer).reduce((a,b)=>a+b.length, 0);
+
+  // 陰陽協調判定（總格顏色）
+  const c = totalCtx.colorCount;
+  let yinyangAdvice = null;
+  if (c.red === 0 && c.black === 5)  yinyangAdvice = {type:'五黑',  text:'五黑：意識顯化的動能不足 → 多曬太陽、觀想光（補陽）'};
+  else if (c.red === 1 && c.black === 4) yinyangAdvice = {type:'四黑一紅', text:'四黑一紅：陰多陽少 → 多曬太陽、觀想光（補陽）'};
+  else if (c.red === 5 && c.black === 0) yinyangAdvice = {type:'五紅',  text:'五紅：意識顯化的動能不足 → 多踩泥土地、觀想日出+夕陽+大地（補陰／接地）'};
+  else if (c.red === 4 && c.black === 1) yinyangAdvice = {type:'四紅一黑', text:'四紅一黑：陽多陰少 → 多踩泥土地、觀想日出+夕陽+大地（補陰／接地）'};
+
+  let html = `<div class="layer-card purification-card">`;
+  html += `<div class="purif-title">📿 顯化淨化建議（依命盤觸發劇情自動產出）</div>`;
+  html += `<div class="item info">系統依書本第 10 章 P22-P29 與療癒淨化資料學習，把命盤已觸發的 ${totalCount} 項劇情整理成可直接寫在咒輪紙上的內容，並附完整療癒淨化／顯化念誦步驟。`;
+  html += ` 注意事項：每張咒輪紙建議 <b>2-4 支甘露</b>淨化（個人想做到的程度）；每唸一句、停留 1-2 秒，讓頻率跟上那句話再唸下一句。</div>`;
+
+  // ▼▼▼ 第 1 區：療癒淨化（清理已觸發劇情）▼▼▼
+  html += `<div class="purif-section">`;
+  html += `<div class="purif-h">▼ 一、療癒淨化（清理已觸發的劇情）</div>`;
+
+  // 步驟 1：咒輪紙內容
+  html += `<div class="purif-h"><span class="purif-step-num">1</span>步驟一：寫咒輪紙（依下列已觸發劇情，每張一個主題）</div>`;
+  const renderZhuluen = (tag, items, layerName) => {
+    if (!items || items.length === 0) return;
+    // 把多條合併成一個咒輪紙文字（取每條的核心關鍵字）
+    const lines = items.map(it => {
+      // 從 text 中提取核心劇情（截短、去開頭的「人生容易經驗：」「面對情感時：」等贅詞）
+      let core = it.text
+        .replace(/^(人生容易經驗[:：]?|人生容易會有[:：]?|人生容易[:：]?|個性上容易會有[:：]?|個性上容易[:：]?|內在常會有[:：]?|學習時[:：]?|學習上[:：]?|面對情感時[:：]?|與人談感情[時的]*[:：]?|與人談感情時[:：]?|做事的時候[:：]?|在工作與經營事業時[,，]?[:：]?|工作與事業上[,，]?[:：]?|與父母[、,，]長輩以及兒女[、,，]晚輩在互動相處時[,，]?|與兄弟姐妹[、,，]夫妻[、,，]平輩在互動相處時[,，]?|容易經驗[:：]?|容易會有[:：]?|容易因為.+?而[:：]?)/g, '')
+        .replace(/[，。、]+$/, '')
+        .replace(/的劇情$/, '');
+      return core;
+    });
+    html += `<div class="purif-zhuluen">`;
+    html += `<div class="zl-tag">${tag}</div>`;
+    html += `${layerName ? layerName + ' — ' : ''}${NAME}<br>`;
+    html += `人生容易經驗：<br>`;
+    html += lines.slice(0, 3).map(l => `「${l}」`).join('<br>');
+    if (lines.length > 3) html += `<br><span style="color:#888;font-size:11px;">⋯（共 ${lines.length} 項，可分多張咒輪紙寫）</span>`;
+    html += `<br>的劇情`;
+    html += `</div>`;
+  };
+  if (triggered['total-trait'].length)   renderZhuluen('總格・特質',   triggered['total-trait']);
+  if (triggered['total-people'].length)  renderZhuluen('總格・互動',   triggered['total-people']);
+  if (triggered['total-overall'].length) renderZhuluen('總格・整體',   triggered['total-overall']);
+  if (triggered['total-health'].length)  renderZhuluen('總格・健康',   triggered['total-health']);
+  if (triggered['study'].length)         renderZhuluen('學習格 11-20歲', triggered['study']);
+  if (triggered['emotion'].length)       renderZhuluen('情感格 21-30歲', triggered['emotion']);
+  if (triggered['career'].length)        renderZhuluen('事業格 31-40歲', triggered['career']);
+  // 運勢逐十年
+  for (const idx of Object.keys(destinyByLayer)) {
+    const items = destinyByLayer[idx];
+    const ld = layerData.layers.find(l => l.idx === Number(idx));
+    if (!items.length || !ld) continue;
+    renderZhuluen(`運勢 ${ld.ageStart}-${ld.ageEnd}歲`, items, `第 ${idx} 局`);
+  }
+  if (totalCount === 0) {
+    html += `<div class="purif-tip">此命盤未觸發明顯需要清理的劇情，可作為定期保養之用。</div>`;
+  }
+
+  // 步驟 2：下定義
+  html += `<div class="purif-h"><span class="purif-step-num">2</span>步驟二：下定義（拿著寫好的咒輪紙慢慢念）</div>`;
+  html += `<div class="purif-quote">我清楚地知道：當我把眼前的劇情～寫下這張咒輪紙上，
+就能夠透過這些殊勝的符＋連結意識界諸佛菩薩
+的高頻意識能量～來達到清理資料的作用。</div>`;
+
+  // 步驟 3：做交託（三選一）
+  html += `<div class="purif-h"><span class="purif-step-num">3</span>步驟三：做交託（依信仰三選一）</div>`;
+  html += `<div class="purif-quote">為什麼我的人生會經驗這樣的劇情？
+我清楚地知道：只是因為我的意識資料～如此而已～就讓我把這個資料：
+
+<b>【佛教】</b>　交託給～可照十方圖、無有障礙的無量光～南無阿彌陀佛
+<b>【基督徒】</b>交託給～聖靈、上帝主的聖光、聖父、聖子、聖靈，感謝主、讚美主、哈利路亞
+<b>【無特定宗教信仰】</b>交託給～純粹的光與愛</div>`;
+
+  // 步驟 4：噴瓶療癒淨化念誦
+  html += `<div class="purif-h"><span class="purif-step-num">4</span>步驟四：噴瓶療癒淨化（往四周噴，邊噴邊念）</div>`;
+  html += `<div class="purif-quote"><b>【宣告】</b>
+我知道～本質的我是：完美的／健康的／豐盛的⋯
+我只是資料庫裡有些什麼，所以才會經驗這樣的劇情。
+
+<b>【邊噴邊念】（重複 3-5 遍）</b>
+呼請來到 ${NAME} 資料的那些還在其他時空，
+有著無明執著與傷痛經驗的 ${NAME} 跟他的祖先，
+呼請你們過去這邊，我來藉由諸佛菩薩的願力，
+來幫助你們得到清淨解脫，嗡啷哼！
+呼請你們過去這邊，我來藉由諸佛菩薩的願力，
+來幫助你們得到清淨跟解脫，嗡啷哼！
+
+<b>【迴向】</b>
+願以此功德，供養十方諸佛菩薩，迴向十方法界一切眾生；
+願以此功德，迴向給因相同劇情而苦的眾生；
+願以此功德，迴向給過去世的 ${NAME} 跟他的祖先，
+嗡啷哼，嗡啷哼，嗡啷哼⋯
+願以此功德，迴向給所有為相同劇情而苦的眾生。</div>`;
+
+  // 步驟 5：火化咒輪紙
+  html += `<div class="purif-h"><span class="purif-step-num">5</span>步驟五：將咒輪紙火化（念以下內容）</div>`;
+  html += `<div class="purif-quote">我知道《火》可以幫助我做資料庫的清理與顯化
+感恩諸佛菩薩慈悲～協助我做淨化與顯化</div>`;
+  html += `</div>`;
+  // ▲▲▲ 第 1 區結束 ▲▲▲
+
+  // ▼▼▼ 第 2 區：顯化（為自己與他人帶來身心安頓的貴人與可能性）▼▼▼
+  html += `<div class="purif-section">`;
+  html += `<div class="purif-h">▼ 二、顯化（為 ${NAME} 帶來身心安頓的貴人與可能性）</div>`;
+
+  // 步驟 1：顯化咒輪紙範例（依命盤主題建議）
+  html += `<div class="purif-h"><span class="purif-step-num">1</span>步驟一：寫顯化咒輪紙（依需求自選一項或多項）</div>`;
+  const showXianhua = (label, target) => {
+    html += `<div class="purif-zhuluen">`;
+    html += `<div class="zl-tag" style="background:#5b8c3e;">顯化・${label}</div>`;
+    html += `顯化<br>可以幫助 ${NAME}<br>${target}<br>的貴人與可能性`;
+    html += `</div>`;
+  };
+  // 依命盤觸發狀況自動建議顯化方向
+  const xianhuaSuggestions = [];
+  if (triggered['total-overall'].some(it => it.text.includes('歸零') || it.text.includes('白費')))
+    xianhuaSuggestions.push({label:'事業財富', target:'事業有效擴展、財富有效擴展、解決財務困境'});
+  if (triggered['career'].length > 0)
+    xianhuaSuggestions.push({label:'事業', target:'事業順利擴展、貴人相助、人際關係愈來愈好'});
+  if (triggered['emotion'].length > 0)
+    xianhuaSuggestions.push({label:'情感', target:'感情關係愈來愈好、家人支持認同、陪伴一生的伴侶'});
+  if (triggered['study'].length > 0)
+    xianhuaSuggestions.push({label:'學習', target:'學習效率提升、順利通過考試／證照、找到熱情投入的方向'});
+  if (triggered['total-health'].length > 0)
+    xianhuaSuggestions.push({label:'健康', target:'身心安頓、健康狀態恢復、找到合適的醫療資源'});
+  // 運勢有觸發的也加上對應建議
+  if (Object.values(destinyByLayer).some(arr => arr.length > 0))
+    xianhuaSuggestions.push({label:'運勢', target:'解決事件／官司圓滿善了、人際關係愈來愈好、活出更快樂更棒的自己'});
+
+  if (xianhuaSuggestions.length === 0) {
+    showXianhua('身心安頓', '身心安頓、活出更快樂更棒的自己');
+  } else {
+    for (const s of xianhuaSuggestions) showXianhua(s.label, s.target);
+  }
+
+  html += `<div class="purif-tip">參考清單：① 活出更快樂更棒的自己 ② 工作更順利 ③ 順利成交／順利完成 ④ 家人支持認同 ⑤ 半年內有 N 萬進帳 ⑥ 一年內解決 N 萬負債 ⑦ 買到會獲利的股票 ⑧ 帶來更多元的收入 ⑨ 人際關係愈來愈好 ⑩ 兒子機械熱情學習 ⑪ 順利通過考試／證照 ⑫ 老公接觸遇見學課程 ⑬ 陪伴共度一生的伴侶。可依個人需求改寫。</div>`;
+
+  // 步驟 2-3：下定義 + 交託（同療癒淨化）
+  html += `<div class="purif-h"><span class="purif-step-num">2</span>步驟二：下定義</div>`;
+  html += `<div class="purif-quote">我清楚地知道：當我把想要顯化的貴人與可能性～寫在這張咒輪紙上，
+就能夠透過這些殊勝的符＋連結意識界諸佛菩薩
+的高頻意識能量～來達到顯化的作用。</div>`;
+
+  html += `<div class="purif-h"><span class="purif-step-num">3</span>步驟三：做交託（依信仰三選一，同療癒淨化）</div>`;
+  html += `<div class="purif-quote">我知道共同意識資料庫裡（這個世界上），
+本來就存在著⋯的貴人與可能性，就讓我把這些貴人與可能性：
+
+<b>【佛教】</b>　交託給～可照十方圖、無有障礙的無量光～南無阿彌陀佛
+<b>【基督徒】</b>交託給～慈愛的上帝主耶穌⋯感謝主、讚美主、哈利路亞
+<b>【無特定宗教信仰】</b>交託給～純淨的光與愛</div>`;
+
+  // 步驟 4：操作噴瓶顯化
+  html += `<div class="purif-h"><span class="purif-step-num">4</span>步驟四：操作噴瓶顯化（往上噴，邊噴邊念）</div>`;
+  html += `<div class="purif-quote">我知道共同意識資料庫裡（這個世界上），
+本來就存在著⋯的貴人與可能性，我要透過這個可以連結意識界的情境，
+讓這些貴人與可能性，示現到我的生命裡，嗡啷哼！
+
+（重複 3-5 遍）</div>`;
+
+  // 步驟 5：火化
+  html += `<div class="purif-h"><span class="purif-step-num">5</span>步驟五：將咒輪紙火化（同療癒淨化最後步驟）</div>`;
+  html += `<div class="purif-quote">我知道《火》可以幫助我做資料庫的清理與顯化
+感恩諸佛菩薩慈悲～協助我做淨化與顯化</div>`;
+  html += `</div>`;
+  // ▲▲▲ 第 2 區結束 ▲▲▲
+
+  // ▼▼▼ 第 3 區：陰陽協調建議 ▼▼▼
+  if (yinyangAdvice) {
+    html += `<div class="purif-section">`;
+    html += `<div class="purif-h">▼ 三、陰陽協調建議（依命盤總格顏色）</div>`;
+    html += `<div class="purif-quote"><b>${yinyangAdvice.type}</b>：${yinyangAdvice.text}
+
+陰陽不協調 → 生命的動能會不足。
+建議透過上述「曬太陽／踩泥土地」+ 顯化淨化操作，把意識資料庫裡欠缺的動能補回來。
+
+從共同意識資料庫下載到我的個別意識資料庫
+～把他們填寫的動能顯化在我夢想意識界的情境裡。</div>`;
+    html += `</div>`;
+  }
+
+  // ▼▼▼ 第 4 區：注意事項與效果評估 ▼▼▼
+  html += `<div class="purif-section">`;
+  html += `<div class="purif-h">▼ 四、注意事項與效果評估</div>`;
+  html += `<div class="purif-quote"><b>注意事項：</b>
+　• 無論交託、定義、噴瓶淨化、顯化，都要慢慢念→唸進去那些句子的理解裡。
+　• 技巧：每唸一句、停留 1-2 秒，讓頻率跟上那句話再唸下一句。
+　• 每張咒輪紙建議 2-4 支甘露淨化（視個人想做到的程度）。
+
+<b>效果評估：</b>
+　• 現在正在經驗的困擾劇情（例如：疾病、個性、情感關係） → 會看到狀況的改善！
+　• 如果沒看到明顯的改變 → 可卜卦釐清《卡點》。
+　• 非現在正在經驗的困擾（例如：命盤呈現未來會發生的事）或不容易馬上看到效果的模式（犯小人、錢留不下來）
+　　→ 可透過象棋卜卦來釐清療癒淨化的《成效》。
+
+<b>清理後的「彩蛋」：</b>
+　當代清理掉那些障礙的模式與過去原來發生的事，那些曾經因而造成的損失或錯失機會所少賺的錢，會以各式各樣的方式回來。
+　例如：統一發票中獎、額外的賺錢機會、超越原有財力資源的業務擴展。
+
+<b>清理未來會發生的事：</b>
+　可以避免那些事件所造成的遺憾。</div>`;
+  html += `</div>`;
+
+  html += `</div>`; // end purification-card
+  return html;
+}
+
 function checkDaXian(layerBoard) {
   const c = layerBoard.center;
   if (!c) return null;
@@ -3722,6 +4033,8 @@ function renderNatalAnalysis() {
   // 命格選單分析總表（書版命格選單對照，學習自命格選單.zip 16 頁）
   if (allLayersData.length > 0) {
     html += buildMingeTable({layers: allLayersData});
+    // 顯化淨化建議（書本第 10 章 P22-P29 + 療癒淨化與顯化資料夾學習）
+    html += buildPurificationGuide({layers: allLayersData}, '');
   }
 
   target.innerHTML = html;
