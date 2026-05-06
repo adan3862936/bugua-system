@@ -325,14 +325,17 @@
     font-weight: 700;
     font-size: 15px;
   }
+  /* 五子棋盤十字陣形（中、左、右、上、下） */
   .layer-mini-board {
-    display: flex;
+    display: grid;
+    grid-template-columns: repeat(3, 36px);
+    grid-template-rows: repeat(3, 36px);
     gap: 4px;
-    align-items: center;
+    flex-shrink: 0;
   }
   .mini-piece {
-    width: 32px;
-    height: 32px;
+    width: 36px;
+    height: 36px;
     border: 2px solid;
     border-radius: 50%;
     display: flex;
@@ -342,9 +345,37 @@
     font-weight: bold;
     background: #fff;
   }
+  .mini-piece.pos-top    { grid-column: 2; grid-row: 1; }
+  .mini-piece.pos-left   { grid-column: 1; grid-row: 2; }
+  .mini-piece.pos-center { grid-column: 2; grid-row: 2; }
+  .mini-piece.pos-right  { grid-column: 3; grid-row: 2; }
+  .mini-piece.pos-bottom { grid-column: 2; grid-row: 3; }
   .mini-piece.red { color: #c8102e; border-color: #c8102e; }
   .mini-piece.black { color: #1a1a1a; border-color: #1a1a1a; }
+  .mini-piece.empty { border-style: dashed; color: #ccc; border-color: #ccc; }
   .mini-pos { font-size: 9px; color: #888; }
+
+  /* 詳細解說區塊樣式 */
+  .narrative-section {
+    margin-top: 10px;
+    padding: 10px 12px;
+    background: #fff8f0;
+    border-radius: 6px;
+    border-left: 3px solid #d4a574;
+  }
+  .narrative-section .nh {
+    font-weight: 700;
+    color: #8b4513;
+    font-size: 13.5px;
+    margin: 6px 0 4px;
+  }
+  .narrative-section .nh:first-child { margin-top: 0; }
+  .narrative-section .nb {
+    color: #3a3a3a;
+    font-size: 13px;
+    line-height: 1.7;
+    margin-bottom: 2px;
+  }
 
   /* 字義說明 */
   .piece-meta {
@@ -2846,6 +2877,255 @@ function analyzeCrossLayer() {
   return found;
 }
 
+/* ===== 詳細版批命盤解說（書版第 8 章 P170 — 命盤解說：詳細版）=====
+   依不同局產出不同主題段落：
+   - 局 1 總格：特質／互動關係／格局／付出收穫／健康／天人地
+   - 局 2 學習格(11-20)：學習能力／效率／運／格局／當期運勢
+   - 局 3 情感格(21-30)：情感特質／人際和諧／期待如願／收穫付出／當期運勢
+   - 局 4 事業格(31-40)：做事能力／效率／賺錢運／當期運勢
+   - 局 5-8 (41-80歲)：特質／互動／格局／付出收穫／過局往上吃／健康
+*/
+function buildDetailedNarrative(layer, lb, prevLb, patterns, scoreInfo, fiveInfo) {
+  const c = lb.center;
+  if (!c) return '';
+
+  const POS_LABEL = {center:'中央', left:'左', right:'右', top:'上', bottom:'下'};
+  const myColor = c.color;
+
+  const sameColor = ['left','right','top','bottom']
+    .filter(p => lb[p] && lb[p].color === myColor)
+    .map(p => ({pos:p, piece:lb[p]}));
+
+  const centerEats = [];
+  for (const p of ['left','right','top','bottom']) {
+    if (lb[p] && lb[p].color !== myColor && canEat(lb, 'center', p)) {
+      centerEats.push({pos:p, piece:lb[p]});
+    }
+  }
+  const centerEaten = [];
+  for (const p of ['left','right','top','bottom']) {
+    if (lb[p] && lb[p].color !== myColor && canEat(lb, p, 'center') && !isProtected(lb, 'center', p)) {
+      centerEaten.push({pos:p, piece:lb[p]});
+    }
+  }
+
+  // 過局往上吃（中央能吃前一局任一異色棋）
+  const crossUp = [];
+  if (prevLb && prevLb.center) {
+    for (const p of ['left','center','right','top','bottom']) {
+      const target = prevLb[p];
+      if (target && target.color !== myColor && canEat(prevLb, 'center', p)) {
+        crossUp.push({pos:p, piece:target});
+      }
+    }
+  }
+
+  const sameKinds = sameColor.map(s => s.piece.kind);
+  const has = (kind) => sameKinds.includes(kind);
+  const personaOf = (k) => ({
+    shuai:'掌權、領導', shi:'聰明、執著、有自己的價值觀', xiang:'守護、家庭、學習',
+    che:'走直線、行動力強', ma:'活躍、走斜、人緣好、四處奔波',
+    pao:'感性、跳躍式思考、有爆發力', bing:'踏實、實踐、地基穩固'
+  })[k] || '';
+
+  const sections = [];
+  const idx = layer.idx;
+
+  // ===== 局 1 總格 =====
+  if (idx === 1) {
+    let traitText = `卦主中央是 <b>${c.name}</b>（${personaOf(c.kind)}）。`;
+    if (sameColor.length > 0) {
+      traitText += `身上同時帶有 ${sameColor.map(s => s.piece.name).join('、')} 的特質：`;
+      traitText += sameColor.map(s => `${s.piece.name}=${personaOf(s.piece.kind)}`).join('；') + '。';
+    } else {
+      traitText += `沒有同色棋輔助 → 中央 ${c.name} 的特質會被孤立放大呈現。`;
+    }
+    sections.push({h:'◎ 特質', b:traitText});
+
+    const interactions = [];
+    if (centerEats.length > 0)
+      interactions.push(`中央可以吃 ${centerEats.map(e => `${POS_LABEL[e.pos]} ${e.piece.name}`).join('、')} → 該位置代表的人事物會為卦主付出、聽卦主的話。`);
+    if (centerEaten.length > 0)
+      interactions.push(`${centerEaten.map(e => `${POS_LABEL[e.pos]} ${e.piece.name}`).join('、')} 可以吃中央 → 卦主需要為他們付出，或會受其影響、威脅。`);
+    if (interactions.length === 0)
+      interactions.push('中央與外圍無直接吃法 → 互不直接干涉，需看格局與保護。');
+    sections.push({h:'◎ 互動關係', b:interactions.join('<br>')});
+
+    if (patterns.length > 0)
+      sections.push({h:'◎ 格局及需注意的狀態', b:patterns.map(p => `<b>${p.name}</b>：${p.desc}`).join('<br>')});
+
+    sections.push({h:'◎ 付出與收穫',
+      b:`收穫 +${scoreInfo.centerGain}／付出 -${scoreInfo.centerLoss}／淨 ${scoreInfo.net>=0?'+':''}${scoreInfo.net}分。${scoreInfo.note ? '（' + scoreInfo.note + '）' : ''}`});
+
+    let healthText = '';
+    if (fiveInfo.issues.length > 0) healthText = fiveInfo.issues.map(i => i.text).join('；');
+    if (centerEaten.length > 0) {
+      const causeMap = {shi:'呼吸/肺/大腸', xiang:'心血管', ma:'意外/筋骨', pao:'腎/泌尿/婦科', bing:'脾胃/消化/免疫', che:'肝膽/筋目/免疫', shuai:'整體大關卡'};
+      healthText += (healthText ? '；' : '') + `中央被吃 → 注意 ${causeMap[c.kind] || '對應器官'}。`;
+    }
+    if (!healthText) healthText = '中央有保護或可反吃 → 健康無立即威脅。';
+    sections.push({h:'◎ 健康', b:healthText});
+
+    const heaven = (['shuai','shi','xiang'].includes(c.kind)) || sameColor.some(s => ['shuai','shi','xiang'].includes(s.piece.kind));
+    const man    = (['che','ma','pao'].includes(c.kind))     || sameColor.some(s => ['che','ma','pao'].includes(s.piece.kind));
+    const earth  = c.kind === 'bing'                          || has('bing');
+    const tra = [];
+    if (heaven && man && earth) tra.push('✓ 同時具備天、人、地三格 → 陰陽協調、做事完整。');
+    else {
+      if (!heaven) tra.push('缺天格（將/帥/士/仕/相/象）→ 缺乏理想／規劃／方向感。');
+      if (!man)    tra.push('缺人格（俥/車/傌/馬/炮/包）→ 缺乏行動力／人脈／執行管道。');
+      if (!earth)  tra.push('缺地格（兵/卒）→ 缺乏踏實基礎，做事容易浮。');
+    }
+    sections.push({h:'◎ 是否具備天人地', b:tra.join('<br>')});
+  }
+
+  // ===== 局 2 學習格 =====
+  else if (idx === 2) {
+    const learnKinds = ['shuai','shi','xiang','che'];
+    const learnSupports = [c, ...sameColor.map(s => s.piece)].filter(p => learnKinds.includes(p.kind));
+    let abilityText;
+    if (learnSupports.length > 0) {
+      abilityText = `學習特質的棋有：${learnSupports.map(p => p.name).join('、')} → 學習能力不錯。`;
+    } else {
+      abilityText = `中央和同色棋沒有將/帥/士/仕/相/象/俥/車這類學習特質 → 學習能力不特別突出。`;
+    }
+    if (has('ma')) abilityText += ' 同色有馬 → 喜歡學習、好動好問。';
+    if (has('bing') || c.kind === 'bing') abilityText += ' 有兵卒 → 學習踏實、肯讀書。';
+    if (c.kind === 'pao' && (has('ma') || has('bing'))) abilityText += ' 中央是包/炮 + 同色有馬或兵卒 → 喜歡學習但抓不到重點，較無法學以致用。';
+    sections.push({h:'◎ 學習能力', b:abilityText});
+
+    let effText = `淨 ${scoreInfo.net>=0?'+':''}${scoreInfo.net}分（收穫 +${scoreInfo.centerGain}／付出 -${scoreInfo.centerLoss}）→ `;
+    if (scoreInfo.net > 0) effText += '學習效率不錯，付出能換到收穫。';
+    else if (scoreInfo.net < 0) effText += '付出比收穫多，學習要花較多力氣才有成果。';
+    else effText += '收支平衡，學習效率中等。';
+    if (centerEats.length > 0) effText += ` 中央能吃 ${centerEats.map(e => e.piece.name).join('、')} → 善巧地汲取知識。`;
+    sections.push({h:'◎ 學習效率', b:effText});
+
+    let luckText;
+    if (crossUp.length > 0) {
+      luckText = `中央可往上一局（總格）吃 ${crossUp.map(e => `${POS_LABEL[e.pos]||''}${e.piece.name}`).join('、')} → 學習運不錯，能延伸學習成果到一輩子的素養。`;
+    } else {
+      luckText = '中央無法過局往上吃 → 學習運平淡，需要靠當局自己努力。';
+    }
+    sections.push({h:'◎ 學習運', b:luckText});
+
+    if (patterns.length > 0)
+      sections.push({h:'◎ 格局與狀態', b:patterns.map(p => `<b>${p.name}</b>：${p.desc}`).join('<br>')});
+
+    let ageText = `中央 ${c.name}（${personaOf(c.kind)}）在 11-20 歲讀書階段呈現的狀態。`;
+    if (lb.top && lb.top.color !== myColor && centerEaten.some(e => e.pos === 'top'))
+      ageText += ' 上方（父母/師長）為異色且能吃中央 → 該時期父母師長對卦主管教較嚴、容易有衝突。';
+    else if (lb.top && lb.top.color === myColor)
+      ageText += ' 上方同色 → 父母師長對卦主較友善、放手不太管。';
+    if (lb.bottom && centerEaten.some(e => e.pos === 'bottom'))
+      ageText += ' 下方（弟妹/同儕）異色能吃中央 → 同儕關係要小心。';
+    sections.push({h:'◎ 11-20歲的運勢', b:ageText});
+  }
+
+  // ===== 局 3 情感格 =====
+  else if (idx === 3) {
+    const hasMaPaoSame = sameColor.some(s => ['ma','pao'].includes(s.piece.kind));
+    let emoText = `中央是 <b>${c.name}</b>。`;
+    if (['ma','pao'].includes(c.kind) || hasMaPaoSame) {
+      emoText += ' 中央或同色帶有傌/馬/炮/包 → 對情感較主動、浪漫、行動力強。';
+    } else {
+      emoText += ' 中央和同色都沒有傌/馬/炮/包 → 對情感比較被動、不浪漫，少了一些期待。';
+    }
+    sections.push({h:'◎ 情感特質', b:emoText});
+
+    let harmonyText = `同色棋共 ${sameColor.length} 隻 → `;
+    if (sameColor.length >= 2) harmonyText += '人際關係中有同伴，深交時較不孤單。';
+    else harmonyText += '深交時容易感到孤單，需要多陪伴自己。';
+    if (patterns.some(p => p.name && p.name.includes('消耗'))) harmonyText += ' 有消耗格 → 行動力被牽制，與人深交容易內耗想太多、行動力弱。';
+    if (patterns.some(p => p.name && p.name.includes('一枝獨秀'))) harmonyText += ' 有一枝獨秀格 → 偏執認知，容易堅持自己的看法。';
+    sections.push({h:'◎ 人際是否和諧', b:harmonyText});
+
+    let expectText = '';
+    if (scoreInfo.net > 0) expectText = `淨 +${scoreInfo.net}分 → 情感中能得到回報，期待較能如願。`;
+    else if (scoreInfo.net < 0) expectText = `淨 ${scoreInfo.net}分 → 情感中付出多於收穫，期待容易落空。`;
+    else expectText = '收支平衡 → 情感中得失互補，需要學會平常心。';
+    if (!hasMaPaoSame && c.kind !== 'ma' && c.kind !== 'pao') expectText += ' 沒有同色傌馬炮包 → 對浪漫的期待本就較少。';
+    sections.push({h:'◎ 期待是否能如願', b:expectText});
+
+    sections.push({h:'◎ 收穫與付出',
+      b:`收穫 +${scoreInfo.centerGain}／付出 -${scoreInfo.centerLoss}／淨 ${scoreInfo.net>=0?'+':''}${scoreInfo.net}分。${scoreInfo.note ? '（' + scoreInfo.note + '）' : ''}`});
+
+    let ageText = `21-30 歲是建立深度人際關係的階段，中央 ${c.name} 主導這個時期的情感模式。`;
+    if (patterns.length > 0) ageText += ` 含 ${patterns.map(p => p.name).join('、')} 等格局，會影響感情走向。`;
+    sections.push({h:'◎ 21-30歲的運勢', b:ageText});
+  }
+
+  // ===== 局 4 事業格 =====
+  else if (idx === 4) {
+    const workKinds = ['shuai','che','ma','pao'];
+    const workSupports = [c, ...sameColor.map(s => s.piece)].filter(p => workKinds.includes(p.kind));
+    let workText;
+    if (workSupports.length > 0) workText = `具備行動特質的棋：${workSupports.map(p => p.name).join('、')} → 做事能力強、行動力夠。`;
+    else workText = '中央和同色棋偏文（士/相/兵）→ 做事偏穩重而非衝勁型，靠思考與規劃取勝。';
+    sections.push({h:'◎ 做事的能力', b:workText});
+
+    let effText = `淨 ${scoreInfo.net>=0?'+':''}${scoreInfo.net}分 → `;
+    if (scoreInfo.net > 5) effText += '事業有成、付出能換得明顯回報。';
+    else if (scoreInfo.net > 0) effText += '基本能賺，但要付出對等的努力。';
+    else if (scoreInfo.net === 0) effText += '收支平衡，事業需要找到突破點。';
+    else effText += '付出多於收穫，要小心做白工或被消耗。';
+    sections.push({h:'◎ 做事的效率', b:effText});
+
+    let moneyText;
+    if (crossUp.length > 0 && (c.kind === 'che' || c.kind === 'pao')) {
+      moneyText = `中央 ${c.name} 可過局往上吃 ${crossUp.map(e => e.piece.name).join('、')} → 有跨局財富延伸的機會，事業可以拉動更早期累積的資源。`;
+    } else if (crossUp.length > 0) {
+      moneyText = `可過局往上吃但中央非俥車炮包 → 跨局財富影響有限。`;
+    } else {
+      moneyText = '無法過局往上吃 → 賺錢偏靠現局，需要紮實做事不能靠投機。';
+    }
+    sections.push({h:'◎ 賺錢的運', b:moneyText});
+
+    let ageText = `31-40 歲是事業衝刺期，本局中央 ${c.name} 主導這十年的職場模式。`;
+    if (patterns.length > 0) ageText += ` 含 ${patterns.map(p => p.name).join('、')} 等格局，會影響事業走向。`;
+    sections.push({h:'◎ 31-40歲的運勢', b:ageText});
+  }
+
+  // ===== 局 5-8：41-80 歲 =====
+  else {
+    let traitText = `中央是 <b>${c.name}</b>（${personaOf(c.kind)}）。`;
+    if (sameColor.length > 0) traitText += `同色帶有 ${sameColor.map(s => s.piece.name).join('、')} 的特質。`;
+    else traitText += '沒有同色棋輔助。';
+    sections.push({h:`◎ ${layer.range}的特質`, b:traitText});
+
+    const interactions = [];
+    if (centerEats.length > 0) interactions.push(`中央可吃 ${centerEats.map(e => `${POS_LABEL[e.pos]} ${e.piece.name}`).join('、')} → 在這時期有掌握權與收穫機會。`);
+    if (centerEaten.length > 0) interactions.push(`${centerEaten.map(e => `${POS_LABEL[e.pos]} ${e.piece.name}`).join('、')} 可吃中央 → 該位置代表的人事物會威脅或消耗卦主，要特別留意。`);
+    if (interactions.length === 0) interactions.push('中央與外圍無直接吃法 → 該時期較平穩。');
+    sections.push({h:`◎ ${layer.range}的互動`, b:interactions.join('<br>')});
+
+    if (patterns.length > 0) sections.push({h:'◎ 該局格局', b:patterns.map(p => `<b>${p.name}</b>：${p.desc}`).join('<br>')});
+
+    sections.push({h:'◎ 付出與收穫',
+      b:`收穫 +${scoreInfo.centerGain}／付出 -${scoreInfo.centerLoss}／淨 ${scoreInfo.net>=0?'+':''}${scoreInfo.net}分。${scoreInfo.note ? '（' + scoreInfo.note + '）' : ''}`});
+
+    if (crossUp.length > 0) {
+      sections.push({h:'◎ 過局往上吃（補運）', b:`中央可往上一局吃 ${crossUp.map(e => `${POS_LABEL[e.pos]||''}${e.piece.name}`).join('、')} → 有跨局延伸的機會。`});
+    }
+
+    let healthText = '';
+    if (fiveInfo.issues.length > 0) healthText = fiveInfo.issues.map(i => i.text).join('；');
+    if (centerEaten.length > 0) {
+      const causeMap = {shi:'呼吸/肺/大腸', xiang:'心血管', ma:'意外/筋骨', pao:'腎/泌尿/婦科', bing:'脾胃/消化/免疫', che:'肝膽/筋目/免疫', shuai:'整體大關卡'};
+      healthText += (healthText ? '；' : '') + `中央被吃 → 注意 ${causeMap[c.kind] || '對應器官'}。`;
+    }
+    if (!healthText) healthText = '中央有保護或可反吃 → 健康無立即威脅。';
+    sections.push({h:'◎ 健康', b:healthText});
+  }
+
+  let html = `<div class="narrative-section">`;
+  for (const s of sections) {
+    html += `<div class="nh">${s.h}</div><div class="nb">${s.b}</div>`;
+  }
+  html += `</div>`;
+  return html;
+}
+
 function checkDaXian(layerBoard) {
   const c = layerBoard.center;
   if (!c) return null;
@@ -2925,13 +3205,14 @@ function renderNatalAnalysis() {
     html += `<div class="layer-card">`;
     html += `<div class="layer-header">`;
     html += `<div><div class="layer-title">第${layer.idx}局・${layer.name}（${layer.range}）</div></div>`;
+    // 五子棋盤十字陣形：中、左、右、上、下
     html += `<div class="layer-mini-board">`;
-    for (const p of ['left','center','right','top','bottom']) {
+    for (const p of ['top','left','center','right','bottom']) {
       const pp = lb[p];
       if (pp) {
-        html += `<div class="mini-piece ${pp.color}">${pp.name}</div>`;
+        html += `<div class="mini-piece pos-${p} ${pp.color}">${pp.name}</div>`;
       } else {
-        html += `<div class="mini-piece" style="border-style:dashed;color:#ccc;">空</div>`;
+        html += `<div class="mini-piece pos-${p} empty">空</div>`;
       }
     }
     html += `</div></div>`;
@@ -2952,6 +3233,11 @@ function renderNatalAnalysis() {
     }
     // 中央個性
     html += `<div class="piece-meta"><b>中央 ${lb.center.name}</b>：${lb.center.persona}</div>`;
+
+    // 詳細版批命盤解說（書版 P170 — 命盤解說：詳細版）
+    const prevLb = layer.idx > 1 ? getLayerBoard(layer.idx - 1) : null;
+    html += buildDetailedNarrative(layer, lb, prevLb, patterns, scoreInfo, fiveInfo);
+
     html += `</div>`;
   }
 
