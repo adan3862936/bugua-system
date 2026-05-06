@@ -1037,18 +1037,44 @@ function detectPatterns(board) {
     }
   }
 
-  // 18. 十字天助格（書版 v2.0 — 第 6 章 p.106 — 蔡建安老師原話）
+  // 18. 十字天助格（書版 v2.0.3 — 第 6 章 p.106 — 蔡建安老師原話 + 祥哥糾正嚴格版）
+  //
   //     書版定義：「卦象中 ①②③ 的位置 或 ①④⑤ 的位置 為同一個顏色，像十字架一樣」
-  //     ◎ ①②③ 同色 = 中+左+右 = 橫向十字
-  //     ◎ ①④⑤ 同色 = 中+上+下 = 縱向十字
+  //
+  //     祥哥糾正（書本第 106 頁三個範例完美驗證）：
+  //     ◎ 橫向十字 = ①②③同色 AND ④⑤都跟中央異色（純粹十字架形狀）
+  //     ◎ 縱向十字 = ①④⑤同色 AND ②③都跟中央異色（純粹十字架形狀）
+  //
+  //     書本範例驗證：
+  //     1. 左盤(上俥紅/左士黑/中包黑/右卒黑/下兵紅)：①②③三黑同色 + ④⑤兩紅異色 → 橫向十字 ✓
+  //     2. 中盤(上卒黑/左相紅/中馬黑/右仕紅/下象黑)：①④⑤三黑同色 + ②③兩紅異色 → 縱向十字 ✓
+  //     3. 右盤(上傌紅/左車黑/中俥紅/右士黑/下兵紅)：①④⑤三紅同色 + ②③兩黑異色 → 縱向十字 ✓
+  //
+  //     若五子全同色 → 是「悔恨格」（已被獨立判定，不算十字天助格）
+  //     若四同色一異色 → 是「雨傘格」/「眾星拱月」/「一枝獨秀」（已被獨立判定）
+  //     真正的十字天助格嚴格要求：3 同色（在十字位置）+ 2 異色（在十字外）
   if (center) {
-    // 縱向十字 = ①(中) + ④(上) + ⑤(下) 同色
-    if (board.top && board.bottom && board.top.color === center.color && board.bottom.color === center.color) {
-      result.push({type:'good', name:'十字天助格(縱)', desc:'①④⑤同色（縱向十字）→ 有天助、有老天看顧、時機點對了。'});
+    // 縱向十字 = ①④⑤同色 AND ②③都跟中央異色
+    const verticalAxisSame = board.top && board.bottom &&
+      board.top.color === center.color && board.bottom.color === center.color;
+    if (verticalAxisSame) {
+      const leftDifferent = !board.left || board.left.color !== center.color;
+      const rightDifferent = !board.right || board.right.color !== center.color;
+      if (leftDifferent && rightDifferent) {
+        result.push({type:'good', name:'十字天助格(縱)',
+          desc:'①④⑤同色 + ②③異色（純粹縱向十字架形狀）→ 有天助、有老天看顧、時機點對了。'});
+      }
     }
-    // 橫向十字 = ①(中) + ②(左) + ③(右) 同色
-    if (board.left && board.right && board.left.color === center.color && board.right.color === center.color) {
-      result.push({type:'good', name:'十字天助格(橫)', desc:'①②③同色（橫向十字）→ 有天助、有老天看顧、時機點對了。'});
+    // 橫向十字 = ①②③同色 AND ④⑤都跟中央異色
+    const horizontalAxisSame = board.left && board.right &&
+      board.left.color === center.color && board.right.color === center.color;
+    if (horizontalAxisSame) {
+      const topDifferent = !board.top || board.top.color !== center.color;
+      const bottomDifferent = !board.bottom || board.bottom.color !== center.color;
+      if (topDifferent && bottomDifferent) {
+        result.push({type:'good', name:'十字天助格(橫)',
+          desc:'①②③同色 + ④⑤異色（純粹橫向十字架形狀）→ 有天助、有老天看顧、時機點對了。'});
+      }
     }
   }
 
@@ -2571,7 +2597,7 @@ function renderReference() {
     <div class="item good">📌 <b>㉑ 皇帝格</b>（命盤總格）：5 子全為兵卒 → 五隻地格踏實，做什麼都容易成功</div>
     <div class="item good">📌 <b>㉒ 勝利格</b>：②③⑤同色（V 字）→ 想做的事容易成局；同色=靠自己；好朋友=靠人助</div>
     <div class="item">📌 <b>㉓ 雨傘格</b>：②③④同色 → 有天助（撐傘看不到天，心情會悶）。命盤最後一局=這輩子是輪迴最後一世</div>
-    <div class="item good">📌 <b>㉔ 十字天助格</b>：①②③ 或 ①④⑤ 同色 → 有天助、有老天看顧、時機對了</div>
+    <div class="item good">📌 <b>㉔ 十字天助格</b>：①②③同色 + ④⑤異色（橫向）<b>或</b> ①④⑤同色 + ②③異色（縱向）→ 純粹十字架形狀，有天助、有老天看顧、時機對了。注意：另外兩支必須跟中央異色，否則就變成雨傘格/眾星拱月/悔恨格</div>
     <div class="item good">📌 <b>㉕ 修行緣分格</b>（命盤）：中央相象+同色傌馬炮包/中央傌馬炮包/有雨傘十字天助 → 跟神明有連結</div>
     <div class="item warn">📌 <b>㉖ 生死關</b>（命盤十年運）：被通吃+中央無能力反吃跑掉 → 十年運中的重大關卡（可能壽終）</div>
   </div>`;
