@@ -1401,14 +1401,16 @@ function detectPatterns(board, context) {
       return `中央${center.name}被吃對應：${byVictim}${byAttacker}`;
     };
 
-    // 收集觸發理由
+    // 收集觸發理由與觸發碼（A/B/C/D/D-friend/D-regret/E 對應書版 P31-P32 各層）
     const reasons = [];
+    const triggers = [];
     let triggered = false;
     let mainAttacker = attackers[0] || null;
 
     // ▶ A：一般原則 — 中央無路（不能反吃）+ 至少一支能吃中央且無保護；若中央能反吃同攻擊者 → 不算
     if (attackers.length > 0 && !centerCanFightBack) {
-      reasons.push('一般原則：中央無法反吃外圍且無保護被吃');
+      reasons.push('A 一般原則：中央無法反吃外圍且無保護被吃');
+      triggers.push('A');
       triggered = true;
     }
 
@@ -1422,7 +1424,8 @@ function detectPatterns(board, context) {
       });
       const hasBaodong = result.some(r => r.name && r.name.includes('暴動'));
       if (hasOpposingShuaiAttack && hasBaodong) {
-        reasons.push('50歲後特例：別色將/帥暴動可吃中央');
+        reasons.push('B 50歲後特例：別色將/帥暴動可吃中央');
+        triggers.push('B');
         triggered = true;
       }
     }
@@ -1431,7 +1434,8 @@ function detectPatterns(board, context) {
     if (ageStart >= 70) {
       const hasSplit = result.some(r => r.name === '分離格');
       if (hasSplit) {
-        reasons.push('70歲後特例：分離格 → 壽魂想離開的可能');
+        reasons.push('C 70歲後特例：分離格 → 壽魂想離開的可能');
+        triggers.push('C');
         triggered = true;
       }
     }
@@ -1439,17 +1443,20 @@ function detectPatterns(board, context) {
     // ▶ D：81 歲後特殊判定 — 不論保護，只要能被吃就算；但中央能反吃 → 不算
     if (ageStart >= 81) {
       if (attackersIgnoreProtect.length > 0 && !centerCanFightBack) {
-        reasons.push('81歲後特殊判定：中央可被吃即算（不論保護）');
+        reasons.push('D 81歲後特殊判定：中央可被吃即算（不論保護）');
+        triggers.push('D');
         triggered = true;
         if (!mainAttacker) mainAttacker = attackersIgnoreProtect[0];
       }
       const hasFriendBoard = result.some(r => r.name && (r.name.includes('好朋友') || r.name === '好朋友格'));
       if (hasFriendBoard && attackersIgnoreProtect.length > 0) {
-        reasons.push('81歲後好朋友格被吃可能性大');
+        reasons.push('D-friend 81歲後好朋友格被吃可能性大');
+        triggers.push('D-friend');
       }
       const hasRegret = result.some(r => r.name && r.name.includes('悔恨'));
       if (hasRegret && attackersIgnoreProtect.length > 0) {
-        reasons.push('81歲後悔恨格也有機率構成');
+        reasons.push('D-regret 81歲後悔恨格也有機率構成');
+        triggers.push('D-regret');
       }
     }
 
@@ -1459,10 +1466,11 @@ function detectPatterns(board, context) {
     const isPaoCenterWeak = (center.kind === 'pao') && !centerCanEatAny;
     const isBingCenterConsume = (center.kind === 'bing') && hasConsume;
     if ((hasYinYangBad || hasConsume) && (isPaoCenterWeak || isBingCenterConsume || isAllEatenPattern)) {
-      reasons.push('陰陽不協調/消耗 + 中央動能不足 → 生死關「可能性」');
+      reasons.push('E 陰陽不協調/消耗 + 中央動能不足 → 生死關「可能性」');
+      triggers.push('E');
       // 這條只列「可能性」，若 A/B/C/D 沒觸發，也標一個提示但不當主觸發
       if (!triggered) {
-        result.push({type:'warn', name:'生死關（可能性）',
+        result.push({type:'warn', name:'生死關（可能性）', triggers:['E'],
           desc:`${reasons[reasons.length-1]}。建議做生死關的療癒淨化。${buildCause(null)}（命盤第${context.layerNum}局・${context.ageStart}-${context.ageEnd}歲）`});
       }
     }
@@ -1470,31 +1478,36 @@ function detectPatterns(board, context) {
     if (triggered) {
       // ▶ H：避掉生死關的可能性（4 條）
       const escapeReasons = [];
+      const escapes = [];
 
       // (1) 30 歲前 + 總格（context.totalLayer）有象/相 → 天助
       if (ageEnd <= 30 && context.totalHasXiang) {
         escapeReasons.push('30歲前生死關，總格有象/相 → 可因天助而避過');
+        escapes.push('H1');
       }
       // (2) 總格自己包/炮/馬/傌可吃別人 → 神明力量
       if (context.totalSelfPaoMaCanEat) {
         escapeReasons.push('總格自己包炮馬傌能吃對方 → 有神明力量可避過（仍建議清理）');
+        escapes.push('H2');
       }
       // (3) 總格自己棋可吃不同色象/相 → 累世修行
       if (context.totalSelfCanEatXiang) {
         escapeReasons.push('總格自己棋可吃不同色象/相 → 累世修行可避過（仍建議清理）');
+        escapes.push('H3');
       }
       // (4) 當局為雨傘格、十字天助格、或中央象/相
       const hasUmbrella = result.some(r => r.name && (r.name.includes('雨傘')));
       const hasCross    = result.some(r => r.name && (r.name.includes('十字天助') || r.name.includes('十字天柱')));
       if (hasUmbrella || hasCross || center.kind === 'xiang') {
         escapeReasons.push(`當局有${hasUmbrella?'雨傘格':''}${hasCross?'十字天助格':''}${center.kind==='xiang'?'中央為象/相':''} → 有機會避過（仍建議清理）`);
+        escapes.push('H4');
       }
 
       const escapeText = escapeReasons.length > 0
         ? ` ｜避過可能性：${escapeReasons.join('；')}`
         : '';
 
-      result.push({type:'warn', name:'生死關',
+      result.push({type:'warn', name:'生死關', triggers, escapes,
         desc:`命盤第${context.layerNum}局・${context.ageStart}-${context.ageEnd}歲：${reasons.join('；')}。${buildCause(mainAttacker)}${escapeText}（命盤十年運專用，總格/單卦/年運不論）`});
     }
   }
@@ -3414,7 +3427,40 @@ const MINGE_DESTINY = [
   {text:'容易經驗：與兄弟姊妹、夫妻、平輩之間，有價值觀不同或緣分較淺、聚少離多的劇情', src:'左右分離格', cond:c=>c.patterns.some(p=>p.name==='分離格' && p.desc && /左|右/.test(p.desc))},
   {text:'容易經驗：意識顯化動能不足、情緒起伏大的劇情', src:'陰陽不協調', cond:c=>c.has_pattern('一枝獨秀','眾星拱月','鬱卒')},
   {text:'容易經驗：事與願違，所得到的結果與預期不同的劇情', src:'全黑全紅', cond:c=>c.has_pattern('悔恨')},
-  {text:'容易經驗：可能有生死關的劇情', src:'生死關（含 70 歲後分離格、50 歲後外暴動可吃我們）', cond:c=>c.has_pattern('生死關')},
+  // ▼ 生死關（書本第 8 章 P31-P32 完整 5 觸發層）— 涵蓋 A 一般 / B 50後 / C 70後 / D 81後 / E 陰陽異常
+  {text:'容易經驗：可能有生死關的劇情（A 一般原則：中央無法反吃外圍且無保護被吃）',
+    src:'生死關 A 一般原則：中央無路+無保護+至少一支可吃中央',
+    cond:c=>c.patterns.some(p=>p.name==='生死關' && p.triggers && p.triggers.includes('A'))},
+  {text:'容易經驗：50 歲後可能有生死關的劇情（別色將/帥暴動可吃我們，人生不順時更明顯）',
+    src:'生死關 B 50歲後特例：別色將/帥可吃中央 + 同盤暴動格',
+    cond:c=>c.patterns.some(p=>p.name==='生死關' && p.triggers && p.triggers.includes('B'))},
+  {text:'容易經驗：70 歲後可能有生死關的劇情（壽魂想離開的可能）',
+    src:'生死關 C 70歲後特例：分離格 → 壽魂想離開',
+    cond:c=>c.patterns.some(p=>p.name==='生死關' && p.triggers && p.triggers.includes('C'))},
+  {text:'容易經驗：81 歲後可能有生死關的劇情（不論有無保護，只要中央可被吃即算）',
+    src:'生死關 D 81歲後特殊判定：不論保護能被吃即算',
+    cond:c=>c.patterns.some(p=>p.name==='生死關' && p.triggers && p.triggers.includes('D'))},
+  {text:'容易經驗：81 歲後好朋友格被吃的劇情（生死關可能性大）',
+    src:'生死關 D 衍生：81歲後+好朋友格被吃',
+    cond:c=>c.patterns.some(p=>p.name==='生死關' && p.triggers && p.triggers.includes('D-friend'))},
+  {text:'容易經驗：81 歲後悔恨格構成生死關的劇情',
+    src:'生死關 D 衍生：81歲後+悔恨格也有機率構成',
+    cond:c=>c.patterns.some(p=>p.name==='生死關' && p.triggers && p.triggers.includes('D-regret'))},
+  {text:'容易經驗：陰陽不協調、悔恨格、兵卒/包炮消耗+包炮飛出去動能不足 → 有生死關「可能性」（建議做療癒淨化）',
+    src:'生死關 E 陰陽異常：陰陽不協調/消耗 + 中央動能不足 → 可能性',
+    cond:c=>c.patterns.some(p=>p.triggers && p.triggers.includes('E'))},
+  {text:'生死關當局有避過可能性：30 歲前生死關+總格有象/相 → 因天助而避過',
+    src:'生死關 H1 避過：30歲前+總格象相天助',
+    cond:c=>c.patterns.some(p=>p.escapes && p.escapes.includes('H1'))},
+  {text:'生死關當局有避過可能性：總格自己的包/炮/馬/傌可吃別人 → 因神明力量避過（仍建議清理）',
+    src:'生死關 H2 避過：總格自己包炮馬傌可吃別人',
+    cond:c=>c.patterns.some(p=>p.escapes && p.escapes.includes('H2'))},
+  {text:'生死關當局有避過可能性：總格自己的棋可吃不同色象/相 → 因累世修行避過（仍建議清理）',
+    src:'生死關 H3 避過：總格自己可吃不同色象相',
+    cond:c=>c.patterns.some(p=>p.escapes && p.escapes.includes('H3'))},
+  {text:'生死關當局有避過可能性：當局為雨傘格、十字天助格、或中央為象/相 → 有機會避過（仍建議清理）',
+    src:'生死關 H4 避過：當局雨傘/十字天助/中央象相',
+    cond:c=>c.patterns.some(p=>p.escapes && p.escapes.includes('H4'))},
 ];
 
 // 渲染命格選單分析總表
