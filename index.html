@@ -667,7 +667,12 @@
             <div class="picker-grid" id="picker-single"></div>
             <div class="picker-actions">
               <button class="btn btn-secondary" id="btn-clear-single">清空盤面</button>
+              <button class="btn btn-primary" id="btn-random-single" style="background:#9b59b6;">🎲 隨機抽 5 子</button>
+              <button class="btn btn-primary" id="btn-random-next-single" style="background:#8e44ad;">🎲 抽下一顆</button>
               <button class="btn btn-primary" id="btn-print">📄 匯出單卦 PDF</button>
+            </div>
+            <div style="font-size:11px;color:#888;margin-top:6px;line-height:1.4;">
+              💡 <b>🎲 隨機抽 5 子</b>：模擬書版實體 32 顆棋子袋（紅 16 + 黑 16），搖一搖抽 5 顆填滿盤面（中→左→右→上→下）。<b>🎲 抽下一顆</b>：依空格順序逐顆抽。
             </div>
           </div>
         </div>
@@ -716,8 +721,13 @@
         <div class="natal-grid" id="natal-grid"></div>
         <div class="picker-actions">
           <button class="btn btn-secondary" id="btn-clear-natal">清空命盤</button>
+          <button class="btn btn-primary" id="btn-random-natal" style="background:#9b59b6;">🎲 隨機抽 32 子</button>
+          <button class="btn btn-primary" id="btn-random-next-natal" style="background:#8e44ad;">🎲 抽下一顆</button>
           <button class="btn btn-primary" id="btn-analyze-natal">產出命盤分析</button>
           <button class="btn btn-primary" id="btn-print-natal" style="background:#5b8c3e;">📄 匯出命盤 PDF</button>
+        </div>
+        <div style="font-size:11px;color:#888;margin-top:6px;line-height:1.4;">
+          💡 <b>🎲 隨機抽 32 子</b>：模擬書版實體 32 顆棋子袋（紅 16+黑 16），搖一搖依序摸 32 次填滿命盤。<b>🎲 抽下一顆</b>：依空格順序逐顆抽。
         </div>
       </div>
     </div>
@@ -799,6 +809,36 @@ const PIECES = {
   '卒': {color:'black', kind:'bing',  name:'卒', score:10, level:'地-下格', element:'土', persona:'腳踏實地、討厭別人不守信用，有理想不投機。對「能不能落地執行」想很多，務實踏實。', organ:'脾、胃、肌肉、口、消化系統', emotion:'思傷胃'},
 };
 const PIECE_ORDER = ['帥','仕','相','俥','傌','炮','兵','將','士','象','車','馬','包','卒'];
+
+/* ===== 隨機抽棋（書版實體 32 顆棋子袋：紅方 16 + 黑方 16） ===== */
+//   紅方：帥×1, 仕×2, 相×2, 俥×2, 傌×2, 炮×2, 兵×5 = 16
+//   黑方：將×1, 士×2, 象×2, 車×2, 馬×2, 包×2, 卒×5 = 16
+//   共 32 顆，模擬實體袋子搖一搖抽出來的卜卦過程
+function buildPieceBag() {
+  const bag = [];
+  // 紅方
+  bag.push('帥');
+  for (let i = 0; i < 2; i++) bag.push('仕','相','俥','傌','炮');
+  for (let i = 0; i < 5; i++) bag.push('兵');
+  // 黑方
+  bag.push('將');
+  for (let i = 0; i < 2; i++) bag.push('士','象','車','馬','包');
+  for (let i = 0; i < 5; i++) bag.push('卒');
+  return bag;
+}
+// Fisher-Yates shuffle
+function shuffleArray(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+// 抽 n 顆（不放回，模擬實體袋抽棋）
+function drawRandomPieces(n) {
+  return shuffleArray(buildPieceBag()).slice(0, n);
+}
 
 const POSITIONS = ['center','top','bottom','left','right'];
 const POS_LABEL = {center:'中宮(自己)', top:'上(長輩/老闆/父母)', bottom:'下(晚輩/子女/下屬)', left:'左(女平輩/老婆)', right:'右(男平輩/老公)'};
@@ -2917,6 +2957,39 @@ function setupSingle() {
     renderBoard('board-single', board);
     renderAnalysis(board);
   };
+  // 🎲 隨機抽 5 子（書版實體 32 顆袋抽 5 不放回）
+  document.getElementById('btn-random-single').onclick = () => {
+    const drawn = drawRandomPieces(5);
+    board = {
+      center: PIECES[drawn[0]],
+      left:   PIECES[drawn[1]],
+      right:  PIECES[drawn[2]],
+      top:    PIECES[drawn[3]],
+      bottom: PIECES[drawn[4]],
+    };
+    renderBoard('board-single', board);
+    renderAnalysis(board);
+  };
+  // 🎲 抽下一顆（從袋中抽 1 顆放下一個空格，順序：中→左→右→上→下）
+  document.getElementById('btn-random-next-single').onclick = () => {
+    const order = ['center','left','right','top','bottom'];
+    const nextEmpty = order.find(p => !board[p]);
+    if (!nextEmpty) {
+      alert('盤面已滿，請先清空再抽。');
+      return;
+    }
+    // 從袋中扣除已放上盤面的棋子（模擬實體不放回）
+    const usedNames = order.filter(p => board[p]).map(p => board[p].name);
+    const remainingBag = buildPieceBag().filter(name => {
+      const idx = usedNames.indexOf(name);
+      if (idx >= 0) { usedNames.splice(idx, 1); return false; }
+      return true;
+    });
+    const drawn = shuffleArray(remainingBag)[0];
+    board[nextEmpty] = PIECES[drawn];
+    renderBoard('board-single', board);
+    renderAnalysis(board);
+  };
   document.getElementById('btn-print').onclick = () => exportPDF('single');
 
   // 問題輸入即時更新
@@ -4084,6 +4157,40 @@ function setupNatal() {
     natalBoard = new Array(32).fill(null);
     renderNatalGrid();
     document.getElementById('natal-output').innerHTML = '<div class="empty-msg">請先輸入 32 支棋並按「產出命盤分析」。</div>';
+  };
+  // 🎲 隨機抽 32 子（書版實體 32 顆袋全部摸完，模擬命盤摸棋過程）
+  document.getElementById('btn-random-natal').onclick = () => {
+    if (!confirm('將清空目前命盤並重新隨機抽 32 子？')) return;
+    const drawn = drawRandomPieces(32);
+    natalBoard = drawn.map(name => PIECES[name]);
+    renderNatalGrid();
+    renderNatalAnalysis();
+  };
+  // 🎲 抽下一顆（依 1→32 順序填下一個空格，模擬實體袋逐顆摸）
+  document.getElementById('btn-random-next-natal').onclick = () => {
+    const nextIdx = natalBoard.findIndex(x => !x);
+    if (nextIdx === -1) {
+      alert('命盤已滿 32 子，請先清空再抽。');
+      return;
+    }
+    // 從袋中扣除已用棋子（模擬實體不放回）
+    const usedNames = natalBoard.filter(x => x).map(x => x.name);
+    const remainingBag = buildPieceBag().filter(name => {
+      const idx = usedNames.indexOf(name);
+      if (idx >= 0) { usedNames.splice(idx, 1); return false; }
+      return true;
+    });
+    if (remainingBag.length === 0) {
+      alert('袋子已空（理論上不會發生）。');
+      return;
+    }
+    const drawn = shuffleArray(remainingBag)[0];
+    natalBoard[nextIdx] = PIECES[drawn];
+    renderNatalGrid();
+    // 若已填滿 32 子才自動分析；否則只更新格子顯示
+    if (natalBoard.filter(x => x).length === 32) {
+      renderNatalAnalysis();
+    }
   };
   document.getElementById('btn-analyze-natal').onclick = renderNatalAnalysis;
   document.getElementById('btn-print-natal').onclick = () => {
