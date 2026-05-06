@@ -826,18 +826,45 @@ function detectPatterns(board) {
     }).join('、');
     result.push({type:'good', name:'好人緣格', desc:`${goodLuckPairs.length} 組（${detail}）。人緣不錯、間接幫助。`});
   }
-  // 困擾格：需要兩組「真好朋友」
-  if (friendPairs.length >= 2) {
-    result.push({type:'warn', name:'困擾格', desc:'盤中兩組好朋友 → 關係牽連多、難以切割、勞心勞力。'});
+  // 困擾格（書本第 6 章 p.73 — 修正：所有同字異色配對 ≥2 組都算）
+  //     書本：「卦象同時有兩組黑紅同位階的棋子（2兵2卒也算），即為困擾格」
+  //     ◎ 兩組都符合好朋友格 → 困擾能量最強
+  //     ◎ 一組好朋友 + 一組好人緣 → 困擾能量居次
+  //     ◎ 兩組分離格 → 困擾程度最輕微
+  //     注意：兵卒「2兵2卒」也算困擾格（一組兵卒對一組兵卒）
+  const totalFriendPairs = friendPairs.length + goodLuckPairs.length;
+  // 兵卒特殊：2兵2卒 = 一組兵卒（兵紅+卒黑）兩組（如果兩組）
+  // 但實際上 2兵2卒 配對方式：兵A+卒A、兵A+卒B、兵B+卒A、兵B+卒B → 4 種配對
+  // 簡化判定：只要有 ≥2 組「同字異色」的不同配對即可
+  if (totalFriendPairs >= 2) {
+    const intensityNote = friendPairs.length >= 2 ? '（兩組都好朋友 → 困擾能量最強）'
+                       : (friendPairs.length === 1 ? '（一組好朋友+一組好人緣 → 困擾能量居次）'
+                       : '（兩組分離格/好人緣 → 困擾程度最輕微）');
+    result.push({type:'warn', name:'困擾格', desc:`盤中 ${totalFriendPairs} 組同字異色配對 ${intensityNote} → 常有做選擇或下決定的困擾。`});
   }
 
-  // 2. 互相欣賞格（黑士+紅俥/車 或 紅仕+黑車）
-  const hasBlackShi = presentPos.some(p => board[p].name==='士');
-  const hasRedChe = presentPos.some(p => board[p].name==='俥');
-  const hasRedShi = presentPos.some(p => board[p].name==='仕');
-  const hasBlackChe = presentPos.some(p => board[p].name==='車');
-  if ((hasBlackShi && hasRedChe) || (hasRedShi && hasBlackChe)) {
-    result.push({type:'good', name:'互相欣賞格', desc:'黑士+紅俥 或 紅仕+黑車 → 彼此欣賞、有合作空間、感情有吸引、生意有共識。'});
+  // 2. 互相欣賞格（書本第 6 章 p.68）
+  //     書本：「有黑士紅俥或紅仕黑車相鄰或斜對（中間隔一隻不算），即為互相欣賞格」
+  //     必須是 相鄰（中-外圍） OR 斜對（外圍對外圍斜方）
+  //     跨中央被隔開（左↔右、上↔下）不算
+  const shiCheParis = [];
+  for (let i = 0; i < presentPos.length; i++) {
+    for (let j = i+1; j < presentPos.length; j++) {
+      const a = presentPos[i], bp = presentPos[j];
+      const pa = board[a], pb = board[bp];
+      // 檢查是否為（黑士+紅俥）或（紅仕+黑車）
+      const isBlackShi_RedChe = (pa.name==='士' && pb.name==='俥') || (pa.name==='俥' && pb.name==='士');
+      const isRedShi_BlackChe = (pa.name==='仕' && pb.name==='車') || (pa.name==='車' && pb.name==='仕');
+      if (!isBlackShi_RedChe && !isRedShi_BlackChe) continue;
+      // 檢查位置：相鄰 OR 斜對
+      if (isAdjacent(a, bp) || isDiagonalPair(a, bp)) {
+        shiCheParis.push([a, bp, pa.name, pb.name]);
+      }
+    }
+  }
+  if (shiCheParis.length > 0) {
+    const detail = shiCheParis.map(([a, b, n1, n2]) => `${n1}+${n2}`).join('、');
+    result.push({type:'good', name:'互相欣賞格', desc:`${detail}（相鄰或斜對）→ 彼此欣賞、有合作空間、感情有吸引、生意有共識。`});
   }
 
   // 3. 三人同心格（同字同色 ≥3 — 5子盤上只有兵卒可能 3 個）
@@ -848,21 +875,29 @@ function detectPatterns(board) {
     }
   }
 
-  // 4. 消耗格
+  // 4. 消耗格（書本第 6 章 p.69 — 修正：恰好 2 隻同色才算，≥3 → 三人同心格）
+  //     書本：「同時有兩隻同顏色的字，不論相鄰、斜對或分離，即為消耗格」
+  //          「另三隻以上的卒或兵則代表另一種格局（三人同心格或皇帝格）」
+  //     所以兵卒 ≥3 同色 → 三人同心格（不算消耗格）
   for (const kind in colorByKind) {
     for (const color of ['red','black']) {
-      if (colorByKind[kind][color] >= 2) {
+      const count = colorByKind[kind][color];
+      // 恰好 2 隻同色才是消耗格；≥3 是三人同心格（已在前面判定）
+      if (count === 2) {
         const inner = center && color === center.color;
         const meaning = {
           shuai:'執著價值觀、想掌控',
-          shi:'想太多、自以為是、口角糾紛',
+          shi:'自以為是、憂慮、口角糾紛',
           xiang:'情緒起伏、火氣大、被動',
           che:'衝動、管太多、激進',
           ma:'靜不下來、優柔寡斷、心太軟',
           pao:'恐懼、不安、想改變但不知怎麼改',
-          bing:'想太多、行動力弱、拖延'
+          bing:'想太多、行動力弱、拖延、錢容易流失'
         }[kind] || '';
-        result.push({type:'warn', name:`消耗格(${inner ? '內耗' : '外耗'})`, desc:`${color==='red'?'紅':'黑'}${PIECE_ORDER.find(n=>PIECES[n].kind===kind && PIECES[n].color===color)} × 2 → ${meaning}。${inner ? '紅色內耗較不明顯/黑色外耗較明顯。' : ''}`});
+        // 書本：跟中間同顏色的，為自己消耗；跟中間不同顏色的，為對方消耗
+        // 書本：黑棋的消耗表現出來比較明顯，紅棋比較不明顯
+        const visibilityNote = color === 'black' ? '（黑色消耗表現明顯）' : '（紅色消耗表現不明顯）';
+        result.push({type:'warn', name:`消耗格(${inner ? '自己' : '對方'})`, desc:`${color==='red'?'紅':'黑'}${PIECE_ORDER.find(n=>PIECES[n].kind===kind && PIECES[n].color===color)} × 2 → ${meaning}。${visibilityNote}`});
       }
     }
   }
@@ -875,24 +910,34 @@ function detectPatterns(board) {
     }
   }
 
-  // 6. 通吃格 / 被通吃格（中央視角）
+  // 6. 通吃格 / 被通吃格（書本第 6 章 p.77-79）
+  //     ◎ 通吃格：對方「所有棋子」沒有任何保護、牽制或格局限制 → 中央可以通吃
+  //     ◎ 被通吃格：自己「所有棋子」沒保護被吃光，**或中間那隻被吃掉（即使其它棋子不會被吃）也算**
+  //                 但若中間棋子可以吃外圍其它棋子而跑掉，或能與之抗衡，就不會被通吃
   if (center) {
-    // 中央能吃所有對方棋且對方無保護
     const enemies = presentPos.filter(p => p !== 'center' && board[p].color !== center.color);
-    const allEatable = enemies.length > 0 && enemies.every(e => canEat(board, 'center', e) && !isProtected(board, e, 'center'));
-    // 確認沒有好朋友配對
     const noFriendPair = friendPairs.length === 0;
-    if (allEatable && noFriendPair && enemies.length >= 2) {
-      result.push({type:'warn', name:'通吃格', desc:'中央能吃光所有對方棋且對方無保護 → 一開始很有收穫、能量強、有主導權，但短期太強勢，最後可能歸零或重開。'});
+
+    // 通吃格：中央能吃所有對方棋 且 對方都無保護
+    const allEatable = enemies.length >= 2 && enemies.every(e => canEat(board, 'center', e) && !isProtected(board, e, 'center'));
+    if (allEatable && noFriendPair) {
+      result.push({type:'warn', name:'通吃格', desc:'中央能吃光所有對方棋且對方無保護 → 一開始很有收穫、能量強、有主導權，但短期太強勢，最後可能歸零或重開。收穫×20%。'});
     }
-    // 被通吃：所有對方棋能吃中央，且中央無保護
-    const beingEaten = enemies.filter(e => canEat(board, e, 'center'));
-    const centerProtected = isProtected(board, 'center', null) ? false : enemies.some(e => !isProtected(board, 'center', e));
-    if (enemies.length >= 2 && beingEaten.length === enemies.length && noFriendPair) {
-      // 看中央是否完全沒保護
-      const allUnprotected = beingEaten.every(e => !isProtected(board, 'center', e));
-      if (allUnprotected) {
-        result.push({type:'warn', name:'被通吃格', desc:'中央被所有對方棋吃光且無保護 → 大限／生死關／努力歸零，命盤上對應重大關卡。'});
+
+    // 被通吃格（書本明確）：
+    //   1. 中間那隻可被吃（任意一個對方棋能吃中央）且中央無保護 → 被通吃
+    //   2. 但若中央能吃外圍跑掉 OR 能跟攻擊者抗衡 → 不算被通吃
+    if (enemies.length >= 1 && noFriendPair) {
+      // 找出能吃中央且中央無保護的攻擊者
+      const lethalAttackers = enemies.filter(e => canEat(board, e, 'center') && !isProtected(board, 'center', e));
+      if (lethalAttackers.length > 0) {
+        // 中央能跑掉嗎？（中央能吃任意外圍棋）
+        const canRun = enemies.some(e => canEat(board, 'center', e));
+        // 中央能跟所有致命攻擊者抗衡嗎？（中央能反吃每一個 lethalAttacker）
+        const canCounterAll = lethalAttackers.every(a => canEat(board, 'center', a));
+        if (!canRun && !canCounterAll) {
+          result.push({type:'warn', name:'被通吃格', desc:'中央被吃且無保護，又無法跑掉或抗衡 → 大限／生死關／努力歸零。收穫頂多 20%。'});
+        }
       }
     }
   }
@@ -922,89 +967,129 @@ function detectPatterns(board) {
     result.push({type:'good', name:'富貴格', desc:'將+士+相 同盤 → 有天助、有指揮能力、有資源、有人幫忙。但好壞仍要看分數。'});
   }
 
-  // 10. 明君格：將+兵 或 帥+卒 同色
+  // 10. 明君格（書本第 6 章 p.75 — 修正：異色關係）
+  //     書本：「將看得到兵，帥看得到卒，即為明君格」
+  //     ◎ 黑將 + 紅兵（將跟兵異色，公公服侍皇帝）
+  //     ◎ 紅帥 + 黑卒（帥跟卒異色）
+  //     「看得到」 = 相鄰 OR 斜對（兵卒不能飛山，跨中央被隔不算看到）
   const redShuaiPos = presentPos.find(p => board[p].name==='帥');
   const redBingPos = presentPos.filter(p => board[p].name==='兵');
   const blackJiangPos = presentPos.find(p => board[p].name==='將');
   const blackZuPos = presentPos.filter(p => board[p].name==='卒');
-  if (redShuaiPos && redBingPos.length > 0) {
-    result.push({type:'good', name:'明君格', desc:'紅帥帶紅兵 → 有方向、有計畫、有領導能力、能帶兵打仗。'});
-  }
-  if (blackJiangPos && blackZuPos.length > 0) {
-    result.push({type:'good', name:'明君格', desc:'黑將帶黑卒 → 有方向、有計畫、有領導能力、能帶兵打仗。'});
+
+  // 「看得到」判定：相鄰 OR 斜對
+  function canSeePiece(posA, posB) {
+    return isAdjacent(posA, posB) || isDiagonalPair(posA, posB);
   }
 
-  // 11. 暴動格：將/帥 出現但無兵卒搭配（書版 v2.0 命名「暴動格」，取代「暴君格」）
-  //     ◎ 自己暴動：將/帥在中央，看不到自己同色兵卒 → 偏執認知、情緒起伏做錯決定
-  //     ◎ 外在暴動：將/帥不在中央但盤中存在，無同色兵卒搭配 → 外在變數或意外
-  if (redShuaiPos && redBingPos.length === 0) {
-    const isCenter = redShuaiPos === 'center';
-    result.push({type:'warn', name: isCenter ? '暴動格(自己)' : '暴動格(外在)',
-      desc: isCenter
-        ? '紅帥在中央且看不到紅兵 → 自己的暴動：偏執認知、情緒起伏，容易做錯決定。'
-        : `紅帥在${POS_LABEL[redShuaiPos]}且無紅兵搭配 → 外在的暴動：會有外在變數或意外。`});
+  // 黑將 + 紅兵 看得到 → 明君格
+  if (blackJiangPos && redBingPos.length > 0) {
+    const sees = redBingPos.some(bp => canSeePiece(blackJiangPos, bp));
+    if (sees) {
+      result.push({type:'good', name:'明君格', desc:'黑將看到紅兵（公公服侍皇帝）→ 有方向、有計畫、有領導能力，將/兵互為依存。'});
+    }
   }
-  if (blackJiangPos && blackZuPos.length === 0) {
-    const isCenter = blackJiangPos === 'center';
-    result.push({type:'warn', name: isCenter ? '暴動格(自己)' : '暴動格(外在)',
-      desc: isCenter
-        ? '黑將在中央且看不到黑卒 → 自己的暴動：偏執認知、情緒起伏，容易做錯決定。'
-        : `黑將在${POS_LABEL[blackJiangPos]}且無黑卒搭配 → 外在的暴動：會有外在變數或意外。`});
+  // 紅帥 + 黑卒 看得到 → 明君格
+  if (redShuaiPos && blackZuPos.length > 0) {
+    const sees = blackZuPos.some(bp => canSeePiece(redShuaiPos, bp));
+    if (sees) {
+      result.push({type:'good', name:'明君格', desc:'紅帥看到黑卒（公公服侍皇帝）→ 有方向、有計畫、有領導能力，帥/卒互為依存。'});
+    }
   }
 
-  // 12. 分離格：本來該是好朋友的同字異色被「隔開」（中央隔開）
-  //     僅對「將仕象車兵」適用（這些棋上下左右相鄰才是好朋友）
-  //     炮/包：本來就要隔空 → 反而是好朋友，不算分離
-  //     馬/傌：本來要斜相鄰才是好朋友，5 子盤無斜，不算分離（算好人緣）
+  // 11. 暴動格（書本第 6 章 p.75 — 修正：異色關係，依跟中央同色判自己/外在）
+  //     書本：「將看不到同一局或命盤上一局的兵，帥看不到同一局或命盤上一局的卒（隔山也代表看不到），即為暴動格」
+  //     ◎ 自己暴動：將/帥跟中央同色 → 偏執認知、情緒起伏做錯決定
+  //     ◎ 外在暴動：將/帥跟中央異色 → 外在變數或意外
+  //     「看不到」 = 沒有對應異色的兵/卒  OR  異色兵/卒被中央隔開（跨中央上↔下、左↔右）
+  if (center) {
+    // 黑將存在 + 看不到紅兵 → 暴動格
+    if (blackJiangPos) {
+      const sees = redBingPos.some(bp => canSeePiece(blackJiangPos, bp));
+      if (!sees) {
+        const sameAsCenter = board[blackJiangPos].color === center.color;
+        result.push({type:'warn', name: sameAsCenter ? '暴動格(自己)' : '暴動格(外在)',
+          desc: sameAsCenter
+            ? `黑將在${POS_LABEL[blackJiangPos].split('(')[0]}且跟中央同色（看不到紅兵）→ 自己的暴動：偏執認知、情緒起伏做錯決定。`
+            : `黑將在${POS_LABEL[blackJiangPos].split('(')[0]}且跟中央異色（看不到紅兵）→ 外在的暴動：會有外在變數或意外。`});
+      }
+    }
+    // 紅帥存在 + 看不到黑卒 → 暴動格
+    if (redShuaiPos) {
+      const sees = blackZuPos.some(bp => canSeePiece(redShuaiPos, bp));
+      if (!sees) {
+        const sameAsCenter = board[redShuaiPos].color === center.color;
+        result.push({type:'warn', name: sameAsCenter ? '暴動格(自己)' : '暴動格(外在)',
+          desc: sameAsCenter
+            ? `紅帥在${POS_LABEL[redShuaiPos].split('(')[0]}且跟中央同色（看不到黑卒）→ 自己的暴動：偏執認知、情緒起伏做錯決定。`
+            : `紅帥在${POS_LABEL[redShuaiPos].split('(')[0]}且跟中央異色（看不到黑卒）→ 外在的暴動：會有外在變數或意外。`});
+      }
+    }
+  }
+
+  // 12. 分離格（書本第 6 章 p.72 — 修正：只排除炮包，馬也算）
+  //     書本：「好朋友被隔開（非炮包）為分離格」
+  //     ◎ 將/仕/象/車/兵+馬：跨中央被隔開（上↔下、左↔右）= 分離格
+  //     ◎ 炮/包：本來就要隔山才是好朋友，不算分離
   const splitChecks = [['top','bottom'],['left','right']];
   for (const [a, b] of splitChecks) {
     if (board[a] && board[b] && isFriendPair(board[a], board[b])) {
       const kind = board[a].kind;
-      if (['shuai','shi','xiang','che','bing'].includes(kind)) {
+      // 只排除炮包（本來就要隔山才是好朋友），其他都算分離格
+      if (kind !== 'pao') {
         result.push({type:'warn', name:'分離格', desc:`${board[a].name}+${board[b].name} 同字異色被中央隔開 → 緣分較淺、關係容易斷、不易融合。`});
       }
     }
   }
 
-  // 13. 桃花格
-  const hasPao = presentPos.some(p => board[p].kind==='pao');
-  if (hasPao) {
-    // 正桃花：炮+帥（或包+將）異色，且能跨越（中間有跳板）
-    for (const ppos of presentPos) {
-      const pp = board[ppos];
-      if (pp.kind !== 'pao') continue;
-      for (const tpos of presentPos) {
-        const tp = board[tpos];
-        if (!tp || tp.kind !== 'shuai') continue;
-        if (tp.color === pp.color) continue;
-        if (isStraightLine(ppos, tpos) && getMiddle(ppos, tpos) && board[getMiddle(ppos, tpos)]) {
-          result.push({type:'info', name:'桃花格-正桃花', desc:`${pp.name}+${tp.name} 跨中央隔空 → 正常、明面、較直接的感情互動（僅問感情卦適用）。`});
-        }
-      }
-      // 偏桃花：炮+馬 異色（不限位置）
-      for (const tpos of presentPos) {
-        const tp = board[tpos];
-        if (!tp || tp.kind !== 'ma') continue;
-        if (tp.color === pp.color) continue;
-        result.push({type:'info', name:'桃花格-偏桃花', desc:`${pp.name}+${tp.name} 異色 → 曖昧、不穩定、可能小三或非正式關係（僅問感情卦適用）。`});
+  // 13. 桃花格（書本第 6 章 p.83-86 — 修正：包帥/炮將/炮包，無炮馬）
+  //     書本：「卦象中位置②跟③，或④跟⑤，也就是相隔的位置為包帥、炮將、炮包，即為正桃花」
+  //          「包帥、炮將、炮包在其它位置（相鄰或斜對）則為偏桃花」
+  //     正桃花 = 包帥/炮將/炮包 在 跨中央相隔位置（②③橫線、④⑤縱線，中間有棋）
+  //     偏桃花 = 包帥/炮將/炮包 在 相鄰或斜對位置
+  //     爛桃花 = 對方炮/包吃到我們的將/帥
+  for (let i = 0; i < presentPos.length; i++) {
+    for (let j = i+1; j < presentPos.length; j++) {
+      const a = presentPos[i], bp = presentPos[j];
+      const pa = board[a], pb = board[bp];
+      // 必須有炮包參與
+      if (pa.kind !== 'pao' && pb.kind !== 'pao') continue;
+      // 三種組合：炮+帥(異色)、包+將(異色)、炮+包(異色)
+      const isPaoShuai = (pa.kind === 'pao' && pb.kind === 'shuai' && pa.color !== pb.color)
+                     || (pb.kind === 'pao' && pa.kind === 'shuai' && pa.color !== pb.color);
+      const isPaoPao = pa.kind === 'pao' && pb.kind === 'pao' && pa.color !== pb.color;
+      if (!isPaoShuai && !isPaoPao) continue;
+
+      // 判定位置
+      const isJump = isStraightLine(a, bp) && getMiddle(a, bp) && board[getMiddle(a, bp)]; // 跨中央相隔（中間有棋）
+      const isAdj = isAdjacent(a, bp);
+      const isDiag = isDiagonalPair(a, bp);
+
+      const pairName = `${pa.name}+${pb.name}`;
+      if (isJump) {
+        result.push({type:'info', name:'桃花格-正桃花', desc:`${pairName} 跨中央相隔（中間有棋）→ 正常、明面、較直接的感情互動。問姻緣有結婚機率（僅問感情卦適用）。`});
+      } else if (isAdj || isDiag) {
+        result.push({type:'info', name:'桃花格-偏桃花', desc:`${pairName} 相鄰或斜對 → 曖昧、不穩定、能量比正桃花弱，互相喜歡但交往機率低（僅問感情卦適用）。`});
       }
     }
   }
 
-  // 14. 一枝獨秀格（4 同色 + 1 異色，異色不在中央）
-  if (presentPos.length === 5) {
+  // 14. 一枝獨秀格（書本第 6 章 p.93 — 修正：移除「不會被吃」多餘條件）
+  //     書本：「一枝獨秀格也是四紅一黑或四黑一紅，唯一的顏色在旁邊（不是在中間）」
+  //     書本內建規則：「唯一的顏色不會被吃，就算我們有能力吃掉它，也只能得到它一半的分數」
+  //     所以一枝獨秀格的判定條件只有「四同色一異色，異色在外圍」即可，
+  //     「不會被吃」是這個格局的內建效果，不是判定條件。
+  if (presentPos.length === 5 && center) {
     if (colorCount.red === 4 && colorCount.black === 1 && center.color === 'red') {
       const oddPos = POSITIONS.find(p => board[p].color === 'black');
-      // 不會被吃才成立
-      const willBeEaten = POSITIONS.some(p => p !== oddPos && board[p] && canEat(board, p, oddPos));
-      if (!willBeEaten) {
-        result.push({type:'info', name:'一枝獨秀格', desc:`唯一不同色 ${board[oddPos].name} 在 ${POS_LABEL[oddPos]} 不會被吃 → 獨樹一格。`});
+      // 異色在外圍（不在中央）
+      if (oddPos !== 'center') {
+        result.push({type:'info', name:'一枝獨秀格', desc:`唯一不同色 ${board[oddPos].name} 在 ${POS_LABEL[oddPos].split('(')[0]} → 獨樹一格，唯一顏色不會被吃，只能得它的半分。陰陽不協調，分數×50%。`});
       }
     } else if (colorCount.red === 1 && colorCount.black === 4 && center.color === 'black') {
       const oddPos = POSITIONS.find(p => board[p].color === 'red');
-      const willBeEaten = POSITIONS.some(p => p !== oddPos && board[p] && canEat(board, p, oddPos));
-      if (!willBeEaten) {
-        result.push({type:'info', name:'一枝獨秀格', desc:`唯一不同色 ${board[oddPos].name} 在 ${POS_LABEL[oddPos]} 不會被吃 → 獨樹一格。`});
+      if (oddPos !== 'center') {
+        result.push({type:'info', name:'一枝獨秀格', desc:`唯一不同色 ${board[oddPos].name} 在 ${POS_LABEL[oddPos].split('(')[0]} → 獨樹一格，唯一顏色不會被吃，只能得它的半分。陰陽不協調，分數×50%。`});
       }
     }
   }
@@ -1240,22 +1325,44 @@ function computeScores(board) {
     if (halfBoard) break;
   }
 
-  const eats = []; // {attacker, victim, score, isFriendPair, protected}
+  // 計分規則（書本第 6 章 p.65、p.50-53 — 修正雙重減半）
+  //   書本：「卦象中有好朋友格，當局所有的棋子彼此就不會真的互吃，而是互利
+  //          稱為『得到好處』：只能得到那隻棋子一半的分數」
+  //   所以：整盤有好朋友格 → 所有吃法 /2 一次（不再額外為個別好朋友配對 /2）
+  //   保護：對方棋子有保護 → 該吃法另外 /2（這個跟好朋友格獨立）
+  //   抗衡：被攻擊棋子能反吃攻擊者 → 攻擊者只得半分（只對中央被吃適用）
+  const eats = [];
   for (const aPos of presentPos) {
     for (const vPos of presentPos) {
       if (aPos === vPos) continue;
       if (canEat(board, aPos, vPos)) {
         let s = board[vPos].score;
-        // 個別吃法：嚴格好朋友配對才減半
         const friendPair = isFriendPairStrict(board, aPos, vPos);
         const protected_ = isProtected(board, vPos, aPos);
-        if (friendPair || protected_) s = s / 2;
+        // 抗衡：當被攻擊的是中央，且中央能反吃攻擊者
+        const isCounter = vPos === 'center' && canEat(board, vPos, aPos);
+        // 牽制：攻擊方能吃 X，但 X 能吃我方（除中央外）同色棋
+        // 簡化版：當 aPos === 'center' 且能吃 vPos，但 vPos 能吃我方同色棋 → 牽制
+        let isPin = false;
+        if (aPos === 'center' && center) {
+          // 我方同色棋（除中央外）
+          const ownPieces = POSITIONS.filter(p => p !== 'center' && board[p] && board[p].color === center.color);
+          isPin = ownPieces.some(o => canEat(board, vPos, o));
+        }
+
+        // 整盤好朋友格 → 所有吃法 /2（這個涵蓋了「好朋友配對自身的減半」）
         if (halfBoard) s = s / 2;
+        // 保護：另外 /2
+        if (protected_) s = s / 2;
+        // 抗衡或牽制：另外 /2（書本：得到好處 = 半分）
+        if (isCounter || isPin) s = s / 2;
+
         eats.push({
           attackerPos: aPos, victimPos: vPos,
           attacker: board[aPos].name, victim: board[vPos].name,
           score: s,
-          friendPair, protected_: protected_, halfBoard
+          friendPair, protected_, halfBoard,
+          isCounter, isPin
         });
       }
     }
