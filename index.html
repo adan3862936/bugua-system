@@ -467,7 +467,12 @@
             <option value="recruit">✅ 錄取/考試卦</option>
             <option value="decision">🤔 決策卦</option>
             <option value="fortune">🔮 運勢卦（周/月/年）</option>
-            <option value="healing">🧘 療癒淨化效果卦（書版v2.0）</option>
+            <option value="achieve">🎯 會不會成（達到/做到）</option>
+            <option value="lostitem">🔍 失物找回</option>
+            <option value="moneyback">💸 錢能拿回</option>
+            <option value="doctor">👨‍⚕️ 選擇醫生/保健品</option>
+            <option value="pastlife">🌀 前世關係</option>
+            <option value="healing">🧘 療癒淨化效果卦</option>
           </select>
           <label style="display:block;font-size:13px;color:#6b3410;font-weight:600;margin:10px 0 6px;">卜主性別（影響位置代表角色）</label>
           <select id="querent-gender" style="width:100%;padding:8px;border:2px solid #d4b896;border-radius:6px;font-size:13px;background:#fff;">
@@ -1325,12 +1330,28 @@ function computeScores(board) {
     if (halfBoard) break;
   }
 
+  // 一枝獨秀格 / 眾星拱月格 / 鬱卒格 的「唯一顏色不被吃」內建規則
+  //   書本 p.93：「一枝獨秀格唯一的顏色不會被吃，所以就算我們有能力吃掉它，也只能得到它一半的分數」
+  //   書本 p.90：「眾星拱月格/鬱卒格唯一的顏色不會被吃掉（只需要付出好處）」
+  let onlyOnePos = null; // 唯一顏色棋子的位置
+  if (presentPos.length === 5) {
+    const colorCount2 = {red:0, black:0};
+    for (const p of presentPos) colorCount2[board[p].color]++;
+    if (colorCount2.red === 4 && colorCount2.black === 1) {
+      onlyOnePos = POSITIONS.find(p => board[p] && board[p].color === 'black');
+    } else if (colorCount2.red === 1 && colorCount2.black === 4) {
+      onlyOnePos = POSITIONS.find(p => board[p] && board[p].color === 'red');
+    }
+  }
+
   // 計分規則（書本第 6 章 p.65、p.50-53 — 修正雙重減半）
   //   書本：「卦象中有好朋友格，當局所有的棋子彼此就不會真的互吃，而是互利
   //          稱為『得到好處』：只能得到那隻棋子一半的分數」
   //   所以：整盤有好朋友格 → 所有吃法 /2 一次（不再額外為個別好朋友配對 /2）
   //   保護：對方棋子有保護 → 該吃法另外 /2（這個跟好朋友格獨立）
   //   抗衡：被攻擊棋子能反吃攻擊者 → 攻擊者只得半分（只對中央被吃適用）
+  //   牽制：攻擊方 A 能吃 X，但 X 能吃 A 同色其他棋 → A 只得 X 半分
+  //   一枝獨秀/眾星拱月：唯一顏色不會被吃，攻擊者只得半分
   const eats = [];
   for (const aPos of presentPos) {
     for (const vPos of presentPos) {
@@ -1341,14 +1362,22 @@ function computeScores(board) {
         const protected_ = isProtected(board, vPos, aPos);
         // 抗衡：當被攻擊的是中央，且中央能反吃攻擊者
         const isCounter = vPos === 'center' && canEat(board, vPos, aPos);
-        // 牽制：攻擊方能吃 X，但 X 能吃我方（除中央外）同色棋
-        // 簡化版：當 aPos === 'center' 且能吃 vPos，但 vPos 能吃我方同色棋 → 牽制
+        // 牽制：攻擊方 A 能吃 X，但 X 能吃 A 同色的其他棋
+        //       書本第 9 章馬先生範例：右馬要吃下炮，但炮能飛山吃同色的士 → 牽制
+        //       書本第 5 章 p.53：「我能吃掉對方，但是如果我要吃他，我會怕他來吃我其它相同顏色的棋子」
         let isPin = false;
-        if (aPos === 'center' && center) {
-          // 我方同色棋（除中央外）
-          const ownPieces = POSITIONS.filter(p => p !== 'center' && board[p] && board[p].color === center.color);
-          isPin = ownPieces.some(o => canEat(board, vPos, o));
+        const attackerColor = board[aPos].color;
+        for (const p of POSITIONS) {
+          if (p === aPos || p === vPos) continue;
+          if (!board[p]) continue;
+          if (board[p].color !== attackerColor) continue;
+          if (canEat(board, vPos, p)) {
+            isPin = true;
+            break;
+          }
         }
+        // 一枝獨秀/眾星拱月：唯一顏色不會被吃 → 攻擊唯一棋子只得半分
+        const isOnlyOneVictim = (onlyOnePos !== null && vPos === onlyOnePos);
 
         // 整盤好朋友格 → 所有吃法 /2（這個涵蓋了「好朋友配對自身的減半」）
         if (halfBoard) s = s / 2;
@@ -1356,13 +1385,15 @@ function computeScores(board) {
         if (protected_) s = s / 2;
         // 抗衡或牽制：另外 /2（書本：得到好處 = 半分）
         if (isCounter || isPin) s = s / 2;
+        // 一枝獨秀/眾星拱月：唯一顏色不被吃 → 攻擊得半分
+        if (isOnlyOneVictim) s = s / 2;
 
         eats.push({
           attackerPos: aPos, victimPos: vPos,
           attacker: board[aPos].name, victim: board[vPos].name,
           score: s,
           friendPair, protected_, halfBoard,
-          isCounter, isPin
+          isCounter, isPin, isOnlyOneVictim
         });
       }
     }
@@ -1758,6 +1789,23 @@ function buildCaiJiananNarrative(board, patterns, scoreInfo, fiveInfo, qContext)
   if (patterns.some(p => p.name === '生死關')) closing.push('• ⚠ 生死關 → 必須做療癒淨化＋被通吃格的資料清理，不可忽視');
   if (patterns.some(p => p.name === '修行緣分格')) closing.push(`• 修行緣分 → ${subj}有跟神明連結的緣分，可以多做修行功課`);
   if (Math.abs(colorCount.red - colorCount.black) >= 3) closing.push('• 陰陽不協調 → 多做療癒淨化清理意識資料庫，再操作下載補充能量');
+  // 對方馬包吃我方棋 → 卡陰、犯小人（書本第 9 章馬先生範例 + 第 8 章命盤要點）
+  let hasMaPaoEatOurs = false;
+  for (const p of POSITIONS) {
+    if (p === 'center' || !board[p]) continue;
+    if (board[p].color === center.color) continue; // 同色
+    if (!['ma','pao'].includes(board[p].kind)) continue;
+    // 對方馬/包能吃我方棋（中央或同色外圍）？
+    if (canEat(board, p, 'center')) { hasMaPaoEatOurs = true; break; }
+    for (const op of POSITIONS) {
+      if (op === 'center' || op === p || !board[op]) continue;
+      if (board[op].color === center.color && canEat(board, p, op)) {
+        hasMaPaoEatOurs = true; break;
+      }
+    }
+    if (hasMaPaoEatOurs) break;
+  }
+  if (hasMaPaoEatOurs) closing.push('• ⚠ 對方傌馬/炮包吃到我方棋 → 容易卡陰、犯小人、做錯決定。建議做療癒淨化清理「卡陰、犯小人、做錯決定而損失」的資料');
   closing.push(`\n別忘了：「${subjPossessive}本質是完美的、健康的、豐盛的，只是資料庫裡有些什麼，所以才會經驗這樣的劇情。」清掉這些資料，人生劇情就會改善。`);
   sections.push({title:'蔡建安老師結語', content: closing.join('\n')});
 
@@ -1804,16 +1852,24 @@ function renderBoard(boardId, b) {
   });
 }
 
-/* ===== 卦種定義與自動偵測 ===== */
+/* ===== 卦種定義與自動偵測（書本第 9 章 15 個情境） ===== */
 const Q_TYPE_LABELS = {
   auto:'🤖 自動判讀', event:'📋 事件卦', love:'❤️ 感情卦', career:'💼 事業/工作卦',
   business:'🤝 合作/生意卦', health:'🏥 健康卦', wealth:'💰 財運卦',
-  property:'🏠 買賣房子卦', recruit:'✅ 錄取/考試卦', decision:'🤔 決策卦', fortune:'🔮 運勢卦'
+  property:'🏠 買賣房子卦', recruit:'✅ 錄取/考試卦', decision:'🤔 決策卦', fortune:'🔮 運勢卦',
+  achieve:'🎯 會不會成（達到/做到）', lostitem:'🔍 失物找回', moneyback:'💸 錢能拿回', doctor:'👨‍⚕️ 選擇醫生/保健品', healing:'🧘 療癒淨化效果', pastlife:'🌀 前世關係'
 };
 
 function detectQuestionType(text) {
   const t = (text || '').toLowerCase();
   if (!t.trim()) return 'event';
+  // 書本第 9 章特殊情境（優先判讀）
+  if (/前世|上一世|上輩子|累世/.test(t)) return 'pastlife';
+  if (/療癒|淨化|顯化|下載|清理.*資料/.test(t)) return 'healing';
+  if (/失物|找回|遺失|丟掉|不見了|遺失|尋回/.test(t)) return 'lostitem';
+  if (/錢能不能拿回|錢拿得回|借錢|被詐騙|要回錢/.test(t)) return 'moneyback';
+  if (/選擇醫生|哪個醫生|健康食品|保健品|這個醫生|那個醫生/.test(t)) return 'doctor';
+  if (/會不會成|會不會升官|會不會當選|會不會生|官司會不會贏|可不可以用.*買到|達到.*目標|做到/.test(t)) return 'achieve';
   if (/感情|對象|男友|女友|另一半|追|喜歡|愛|分手|曖昧|交往|結婚|離婚|姻緣|桃花|外遇|小三|心動/.test(t)) return 'love';
   if (/錄取|考試|備取|報名|徵選|甄選|考上|及格|過關|榜單|放榜|雅思|托福|證照/.test(t)) return 'recruit';
   if (/買房|賣房|房子|房屋|房地產|物件|買賣|成交|看屋|簽約|交屋|社區|建案|預售/.test(t)) return 'property';
@@ -2152,6 +2208,183 @@ function buildQuestionAnswer(b, patterns, scoreInfo, fiveInfo, qType, qText) {
       // 車關官司
       if (中央被(beingEatenBy, b, 'che')) suggestions.push('⚠ 車關警示 → 注意交通安全、開車小心。');
       if (中央被(beingEatenBy, b, 'shi')) suggestions.push('⚠ 官司/血光警示 → 注意糾紛、爭執、合約。');
+      break;
+    }
+
+    case 'achieve': {
+      // 會不會成（達到/做到）— 書本第 9 章 p.232-233
+      // 「只要我們能夠吃掉對方的棋子（非得到好處），就代表可以成」
+      // 牽制 → 因考量不一定會成
+      // 兵卒/炮包消耗 → 想太多不去行動
+      // 好朋友格 → 有可能性需要顯化
+      const hasPin = scoreInfo.eats.some(e => e.attackerPos === 'center' && e.isPin);
+      const hasOnlyHalfEat = centerEatsAny && scoreInfo.eats.filter(e => e.attackerPos === 'center')
+        .every(e => e.protected_ || e.isCounter || e.isPin || e.isOnlyOneVictim || e.halfBoard);
+      const hasSelfBingPaoExhaust = patterns.some(p => p.name.includes('消耗格(自己)'));
+
+      if (centerEatsAny && !hasOnlyHalfEat && !hasPin) {
+        verdictBadge = '<span class="badge badge-good">會成</span>';
+        verdictText = '中央能完整吃掉對方棋子 → 這件事會成。';
+      } else if (hasPin) {
+        verdictBadge = '<span class="badge badge-warn">不一定成</span>';
+        verdictText = '牽制 → 因考量某些因素，不一定會成。建議做療癒淨化。';
+        analysis.push('⚠ 有牽制：你能吃對方但怕對方反過來吃你同色棋');
+      } else if (hasSelfBingPaoExhaust && centerEatsAny) {
+        verdictBadge = '<span class="badge badge-warn">想太多不行動</span>';
+        verdictText = '中央有自己的兵卒/炮包消耗 → 雖然能吃，但會因想太多、恐懼擔憂而不去行動。';
+      } else if (hasFriendPair) {
+        verdictBadge = '<span class="badge badge-info">需顯化</span>';
+        verdictText = '好朋友格 → 有可能性，但因為無法完整吃掉對方，需要操作顯化才會成。';
+      } else if (!centerEatsAny && !hasFriendPair) {
+        verdictBadge = '<span class="badge badge-warn">機率極低</span>';
+        verdictText = '吃不到也沒好朋友格 → 機率極低，療癒淨化後再操作顯化或許有可能。';
+      } else if (hasOnlyHalfEat) {
+        verdictBadge = '<span class="badge badge-warn">只得好處</span>';
+        verdictText = '只能「得好處」（半分）不算完整吃到 → 不算會成。';
+      }
+      // 困擾/分離/暴動的提醒
+      if (isTangle) analysis.push('💭 困擾格 → 過程會有些困擾');
+      if (isSplit) analysis.push('💭 分離格 → 跟所預期的會有落差或不一樣');
+      if (patterns.some(p => p.name.includes('暴動'))) analysis.push('💭 暴動格 → 會出現自己或外在不可控的狀況');
+      if (isTangle || isSplit || patterns.some(p => p.name.includes('暴動'))) {
+        suggestions.push('做清理讓這件事「更順暢的成」。');
+      }
+      break;
+    }
+
+    case 'lostitem': {
+      // 失物找回（書本第 9 章 p.235）
+      const hasOnlyHalfEat2 = centerEatsAny && scoreInfo.eats.filter(e => e.attackerPos === 'center')
+        .every(e => e.protected_ || e.isCounter || e.isPin || e.isOnlyOneVictim || e.halfBoard);
+      if (centerEatsAny && !hasOnlyHalfEat2) {
+        verdictBadge = '<span class="badge badge-good">找得到</span>';
+        verdictText = '中央能吃對方 → 失物能找得回來。';
+      } else if (hasFriendPair) {
+        verdictBadge = '<span class="badge badge-info">沒丟</span>';
+        verdictText = '好朋友格 → 東西沒有丟掉，有機會找到，但需要顯化才知道何時找到。';
+      } else {
+        verdictBadge = '<span class="badge badge-warn">難找回</span>';
+        verdictText = '吃不到對方 → 找不回來。可操作顯化和跨實相試試。';
+      }
+      break;
+    }
+
+    case 'moneyback': {
+      // 錢能不能拿回（書本第 9 章 p.235）
+      const halfGet = scoreInfo.eats.some(e => e.attackerPos === 'center' && (e.protected_ || e.halfBoard || e.isOnlyOneVictim));
+      if (centerEatsAny && !halfGet) {
+        verdictBadge = '<span class="badge badge-good">拿得回</span>';
+        verdictText = '中央能完整吃對方 → 錢能拿得回來。';
+      } else if (centerEatsAny && halfGet) {
+        verdictBadge = '<span class="badge badge-warn">部分拿回</span>';
+        verdictText = '只能得好處（半分）→ 可以拿回來一部分。';
+      } else {
+        verdictBadge = '<span class="badge badge-warn">拿不回</span>';
+        verdictText = '吃不到也沒好處 → 拿不回來。';
+      }
+      suggestions.push('💡 不論能不能拿回，這代表卦主有「破財的資料」，建議療癒淨化避免重複發生。不要批判對方是加害者。');
+      break;
+    }
+
+    case 'doctor': {
+      // 選擇醫生/吃健康食品（書本第 9 章 p.248）
+      // 看「收穫>付出」，地格 = 處理到病因，不需考量天人格、陰陽
+      const hasDi = POSITIONS.some(p => b[p] && b[p].kind === 'bing');
+      if (scoreInfo.net > 0 && hasDi) {
+        verdictBadge = '<span class="badge badge-good">適合且治本</span>';
+        verdictText = `收穫 +${scoreInfo.net} 分 + 有地格（兵卒）→ 適合，且能處理到病因（治本）。`;
+      } else if (scoreInfo.net > 0) {
+        verdictBadge = '<span class="badge badge-good">適合但治標</span>';
+        verdictText = `收穫 +${scoreInfo.net} 分 → 適合，但缺地格可能只能治標。`;
+      } else if (scoreInfo.net < 0) {
+        verdictBadge = '<span class="badge badge-warn">不適合</span>';
+        verdictText = `付出 ${scoreInfo.net} 分 → 不適合，建議換另一位/另一種試試。`;
+      } else {
+        verdictBadge = '<span class="badge badge-info">普通</span>';
+        verdictText = '收穫等於付出 → 效果普通，可考慮其他選擇。';
+      }
+      // 扣分項
+      const negFactors = [];
+      if (isExhaust) negFactors.push('消耗格');
+      if (isBroken) negFactors.push('破壞格');
+      if (isSplit) negFactors.push('分離格');
+      if (isTangle) negFactors.push('困擾格');
+      if (patterns.some(p => p.name.includes('暴動'))) negFactors.push('暴動格');
+      if (negFactors.length > 0) analysis.push(`⚠ 扣分格局：${negFactors.join('、')}（會降低效果）`);
+      break;
+    }
+
+    case 'pastlife': {
+      // 前世關係判定（書本第 9 章 p.240-244）
+      const c = center.color === 'red' ? '男性' : '女性';
+      const role = {
+        shuai:'君王、元帥、高層級的領袖或領導人',
+        shi:'官職、教師、將軍、將士',
+        xiang:'修行人、宰相、員外',
+        che:'團隊領導人、老闆',
+        ma:'業務、講師、顧問、謀士',
+        pao:'帥哥美女、演藝或風雅人士、商人',
+        bing:'工人、農民、士兵、小生意人'
+      }[center.kind] || '一般人';
+      verdictBadge = '<span class="badge badge-info">前世</span>';
+      verdictText = `上輩子卦主是「${c}」（中央${center.name}屬${center.color === 'red' ? '陽' : '陰'}），角色：${role}。`;
+      analysis.push('💡 詳細前世關係請參考速查表「前世關係判定」段落（依棋種+位置對應）');
+      break;
+    }
+
+    case 'healing': {
+      // 療癒淨化效果卦（書本第 10 章 p.260-261）
+      // 「只看有沒有得吃或有沒有收穫，不算付出」
+      const hasBingFriend = patterns.some(p => {
+        if (p.name !== '好朋友格') return false;
+        return p.desc.includes('兵') && p.desc.includes('卒');
+      });
+      const hasOtherFriend = hasFriendPair && !hasBingFriend;
+      const hasAdjacentMing = isMing && patterns.some(p => p.name === '明君格' && p.desc);
+      const score = scoreInfo.centerGain;
+
+      let healingScore;
+      if (hasBingFriend) {
+        if (score <= 10) healingScore = 80;
+        else if (score <= 30) healingScore = 85;
+        else healingScore = 90;
+        verdictText = `兵卒好朋友格 → 方法正確且已清理到真正根源。療癒成效約 ${healingScore} 分。`;
+        verdictBadge = '<span class="badge badge-good">已到根源</span>';
+      } else if (hasOtherFriend || hasAdjacentMing) {
+        if (score <= 10) healingScore = 70;
+        else if (score <= 30) healingScore = 75;
+        else if (score <= 50) healingScore = 80;
+        else if (score <= 70) healingScore = 85;
+        else healingScore = 90;
+        verdictText = `${hasBingFriend?'':''}好朋友格／相鄰明君格 → 方法跟方向是正確的。療癒成效約 ${healingScore} 分。`;
+        verdictBadge = '<span class="badge badge-good">方向正確</span>';
+      } else if (isHardship && Math.abs(colorCount.red - colorCount.black) === 5) {
+        verdictBadge = '<span class="badge badge-warn">重新卜</span>';
+        verdictText = '五支全黑或全紅 → 建議重新卜一卦。';
+      } else {
+        if (score < 20) healingScore = '需調整';
+        else if (score < 40) healingScore = 60;
+        else if (score < 60) healingScore = 65;
+        else if (score < 80) healingScore = 70;
+        else if (score < 100) healingScore = 75;
+        else if (score < 120) healingScore = 80;
+        else if (score < 140) healingScore = 85;
+        else healingScore = 90;
+        verdictText = `沒有好朋友格／相鄰明君格 → 方向方法可再調整。療癒成效約 ${healingScore} 分。`;
+        verdictBadge = '<span class="badge badge-info">可調整</span>';
+      }
+      // 扣分項
+      let deduction = 0;
+      const dedItems = [];
+      if (isExhaust) { deduction += 2; dedItems.push('消耗格'); }
+      if (isTangle) { deduction += 2; dedItems.push('困擾格'); }
+      if (patterns.some(p => p.name.includes('暴動'))) { deduction += 2; dedItems.push('暴動格'); }
+      if (isSplit) { deduction += 2; dedItems.push('分離格'); }
+      if (isAllEaten) { deduction += 2; dedItems.push('被通吃格'); }
+      if (patterns.some(p => p.name === '一枝獨秀格')) { deduction += 2; dedItems.push('一枝獨秀格'); }
+      if (patterns.some(p => p.name.includes('眾星拱月') || p.name === '鬱卒格')) { deduction += 2; dedItems.push('眾星拱月/鬱卒'); }
+      if (deduction > 0) analysis.push(`⚠ 扣分項：${dedItems.join('、')}（每項-2，共扣 ${deduction} 分）`);
+      suggestions.push('💡 最高 90 分（人的侷限）。建議每項目至少用掉 2-4 支噴瓶後再卜卦看效果。提醒：勿過於執著療癒淨化的分數。');
       break;
     }
 
