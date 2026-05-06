@@ -758,6 +758,11 @@
             <div class="picker-grid" id="picker-pl"></div>
             <div class="picker-actions">
               <button class="btn btn-secondary" id="btn-clear-pl">清空</button>
+              <button class="btn btn-primary" id="btn-random-pl" style="background:#9b59b6;">🎲 隨機抽 5 子</button>
+              <button class="btn btn-primary" id="btn-random-next-pl" style="background:#8e44ad;">🎲 抽下一顆</button>
+            </div>
+            <div style="font-size:11px;color:#888;margin-top:6px;line-height:1.4;">
+              💡 <b>🎲 隨機抽 5 子</b>：模擬書版實體 32 顆棋子袋抽 5 顆填滿盤面（中→左→右→上→下）。<b>🎲 抽下一顆</b>：依空格順序逐顆抽。
             </div>
             <div class="picker-title" style="margin-top:12px;">問卦人現在性別：</div>
             <div style="display:flex; gap:10px; margin-top:6px;">
@@ -4304,6 +4309,39 @@ function setupPastLife() {
   });
   document.getElementById('btn-clear-pl').onclick = () => {
     plBoard = {center:null, top:null, bottom:null, left:null, right:null};
+    renderBoard('board-pastlife', plBoard);
+    renderPLAnalysis();
+  };
+  // 🎲 隨機抽 5 子（書版實體 32 顆袋抽 5 不放回）
+  document.getElementById('btn-random-pl').onclick = () => {
+    const drawn = drawRandomPieces(5);
+    plBoard = {
+      center: PIECES[drawn[0]],
+      left:   PIECES[drawn[1]],
+      right:  PIECES[drawn[2]],
+      top:    PIECES[drawn[3]],
+      bottom: PIECES[drawn[4]],
+    };
+    renderBoard('board-pastlife', plBoard);
+    renderPLAnalysis();
+  };
+  // 🎲 抽下一顆（依空格順序中→左→右→上→下逐顆抽，不放回）
+  document.getElementById('btn-random-next-pl').onclick = () => {
+    const order = ['center','left','right','top','bottom'];
+    const nextEmpty = order.find(p => !plBoard[p]);
+    if (!nextEmpty) {
+      alert('盤面已滿，請先清空再抽。');
+      return;
+    }
+    // 從袋中扣除已用棋子（模擬實體不放回）
+    const usedNames = order.filter(p => plBoard[p]).map(p => plBoard[p].name);
+    const remainingBag = buildPieceBag().filter(name => {
+      const idx = usedNames.indexOf(name);
+      if (idx >= 0) { usedNames.splice(idx, 1); return false; }
+      return true;
+    });
+    const drawn = shuffleArray(remainingBag)[0];
+    plBoard[nextEmpty] = PIECES[drawn];
     renderBoard('board-pastlife', plBoard);
     renderPLAnalysis();
   };
