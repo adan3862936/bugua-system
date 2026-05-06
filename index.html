@@ -377,6 +377,64 @@
     margin-bottom: 2px;
   }
 
+  /* 命格選單分析總表（書版命格選單對照） */
+  .minge-table { border-left-color: #9b59b6 !important; }
+  .minge-table .minge-cat {
+    background: #f4ecf7;
+    color: #6c3483;
+    font-weight: 700;
+    padding: 8px 12px;
+    margin: 10px 0 6px;
+    border-radius: 6px;
+    font-size: 14px;
+  }
+  .minge-table .minge-subcat {
+    color: #884ea0;
+    font-weight: 600;
+    font-size: 13px;
+    margin: 8px 0 4px 4px;
+  }
+  .minge-table .minge-yes {
+    color: #1a1a1a;
+    background: #fff8f0;
+    padding: 5px 8px;
+    margin: 3px 0;
+    border-left: 3px solid #c0392b;
+    border-radius: 3px;
+    font-size: 12.5px;
+    line-height: 1.55;
+  }
+  .minge-table .minge-yes .minge-src {
+    color: #888;
+    font-size: 11px;
+    font-style: italic;
+  }
+  .minge-table .minge-empty {
+    color: #aaa;
+    font-size: 12px;
+    padding: 4px 8px;
+    font-style: italic;
+  }
+  .minge-table .minge-destiny-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+    align-items: start;
+    padding: 5px 8px;
+    margin: 3px 0;
+    border-left: 3px solid #c0392b;
+    background: #fff8f0;
+    border-radius: 3px;
+    font-size: 12.5px;
+    line-height: 1.55;
+  }
+  .minge-table .minge-ages {
+    color: #c0392b;
+    font-weight: 700;
+    font-size: 11.5px;
+    white-space: nowrap;
+  }
+
   /* 字義說明 */
   .piece-meta {
     margin-top: 10px;
@@ -3127,6 +3185,314 @@ function buildDetailedNarrative(layer, lb, prevLb, patterns, scoreInfo, fiveInfo
   return html;
 }
 
+/* ===== 命格選單分析總表（書版命格選單對照，學習自命格選單.zip 16 頁） ===== */
+// 為每一局建立 minge context（給命格選單條目判定用）
+function buildMingeContext(lb, patterns, scoreInfo, fiveInfo) {
+  const c = lb.center;
+  if (!c) return null;
+  const sameColor = ['left','right','top','bottom']
+    .filter(p => lb[p] && lb[p].color === c.color)
+    .map(p => ({pos:p, piece:lb[p]}));
+  const sameKinds = sameColor.map(s => s.piece.kind);
+  const has = (k) => sameKinds.includes(k);
+  // 同字消耗：同色（含中央）此 kind 共 ≥ 2 隻
+  const consume = (k) => {
+    let n = sameColor.filter(s => s.piece.kind === k).length;
+    if (c.kind === k) n += 1;
+    return n >= 2;
+  };
+  // 攻擊者：可吃中央且無保護
+  const attackers = [];
+  for (const p of ['left','right','top','bottom']) {
+    if (lb[p] && lb[p].color !== c.color && canEat(lb, p, 'center') && !isProtected(lb, 'center', p)) {
+      attackers.push({pos:p, piece:lb[p]});
+    }
+  }
+  const attackerKinds = attackers.map(a => a.piece.kind);
+  // 中央能吃哪些
+  const centerEats = [];
+  for (const p of ['left','right','top','bottom']) {
+    if (lb[p] && lb[p].color !== c.color && canEat(lb, 'center', p)) {
+      centerEats.push({pos:p, piece:lb[p]});
+    }
+  }
+  // 上左右下哪些位置會吃我們同色
+  const posWeakerThanThem = (positions, kinds) => {
+    return positions.some(p => {
+      if (!lb[p] || lb[p].color === c.color) return false;
+      if (!kinds.includes(lb[p].kind)) return false;
+      return canEat(lb, p, 'center');
+    });
+  };
+  // 哪些位置付出大於收穫（簡化：該位置同色且被中央吃 = 為我付出；異色且能吃中央 = 我為它付出）
+  const posCostsMore = (p) => {
+    if (!lb[p]) return false;
+    // 該位置異色且能吃中央 → 為它付出
+    if (lb[p].color !== c.color && canEat(lb, p, 'center')) return true;
+    return false;
+  };
+  // 該位置棋種對中央造成威脅
+  const posThreatBy = (p, kinds) => {
+    if (!lb[p] || lb[p].color === c.color) return false;
+    if (!kinds.includes(lb[p].kind)) return false;
+    return canEat(lb, p, 'center') || canEat(lb, 'center', p);
+  };
+  // 圖案匹配
+  const has_pattern = (...names) => patterns.some(p => p.name && names.some(n => p.name.includes(n)));
+  // 顏色統計
+  const colorCount = {red:0, black:0};
+  for (const p of ['left','right','top','bottom','center']) if (lb[p]) colorCount[lb[p].color]++;
+  // 天人地缺
+  const heavenKinds = ['shuai','shi','xiang'];
+  const manKinds = ['che','ma','pao'];
+  const earthKinds = ['bing'];
+  const hasHeaven = heavenKinds.includes(c.kind) || sameKinds.some(k => heavenKinds.includes(k));
+  const hasMan    = manKinds.includes(c.kind)    || sameKinds.some(k => manKinds.includes(k));
+  const hasEarth  = c.kind === 'bing'             || has('bing');
+
+  return {
+    lb, c, sameColor, sameKinds, has, consume, attackers, attackerKinds, centerEats,
+    posWeakerThanThem, posCostsMore, posThreatBy,
+    has_pattern, patterns, scoreInfo, fiveInfo, colorCount,
+    hasHeaven, hasMan, hasEarth,
+  };
+}
+
+// 命格選單條目資料（書版命格選單.zip 學習提煉）
+// 每筆：{text:描述, src:觸發條件文字, cond:(ctx)=>bool}
+const MINGE_TOTAL_TRAIT = [
+  {text:'能力好，但人生容易經驗：很想有所突破與擴展，但無法如願得到所期待的突破與擴展的劇情。', src:'傌/馬/炮/包在中間', cond:c=>['ma','pao'].includes(c.c.kind)},
+  {text:'人生容易經驗：犯小人、卡到陰、做錯決定而損失或少賺可以賺到的錢的劇情。', src:'被傌/馬/炮/包吃', cond:c=>c.attackerKinds.some(k=>['ma','pao'].includes(k))},
+  {text:'內在常會有恐懼和擔憂的感覺。', src:'中間的炮/包受威脅', cond:c=>c.c.kind==='pao' && c.attackers.length>0},
+  {text:'人生容易經驗：內在常有恐懼擔憂，想改變，但不知道如何有效改變與突破的劇情。', src:'自己的炮/包消耗', cond:c=>c.consume('pao')},
+  {text:'人生容易會有：意念靜不下來、方向不定、心太軟的困擾。', src:'自己的傌/馬消耗', cond:c=>c.consume('ma')},
+  {text:'人生容易經驗：會因為想太多、障礙行動、錯失機會、錢容易流失的劇情。', src:'自己的兵/卒消耗', cond:c=>c.consume('bing')},
+  {text:'個性上容易會有：許多主觀的做人做事道理，容易管太多、較衝動的狀態。', src:'自己的俥/車消耗', cond:c=>c.consume('che')},
+  {text:'個性上容易會有：情緒起伏大的困擾。', src:'自己的相/象消耗', cond:c=>c.consume('xiang')},
+  {text:'能力好，但個性上容易會有：許多自以為是的想法，常有活在過去的認知和憂慮未來的狀態。', src:'自己的仕/士消耗', cond:c=>c.consume('shi')},
+  {text:'個性上容易會有：執著某些價值觀與想法的狀態。', src:'中間是將/帥/明君/士/車', cond:c=>['shuai','shi','che'].includes(c.c.kind)},
+  {text:'人生容易經驗：會有偏執的想法、情緒起伏大、有時會有一些變數～而造成損失的劇情。', src:'自己中間或四周自己的帥/將暴動格', cond:c=>c.has_pattern('自己暴動','自己暴君')},
+  {text:'人生容易經驗：會因為一些外在的變數，而造成損失的劇情。', src:'外在的帥/將暴動格', cond:c=>c.has_pattern('外在暴動','外在暴君')},
+  {text:'人生容易經驗：常會有糾紛、名譽受損，甚至於官司的劇情。', src:'自己的仕/士被吃，被仕/士威脅', cond:c=>(c.c.kind==='shi' && c.attackers.length>0) || c.attackerKinds.includes('shi')},
+  {text:'人生容易經驗：常會有車關的劇情。', src:'自己的俥/車被吃，被俥/車威脅', cond:c=>(c.c.kind==='che' && c.attackers.length>0) || c.attackerKinds.includes('che')},
+];
+
+const MINGE_TOTAL_PEOPLE = [
+  {text:'與父母、長輩相處時～彼此都容易有暴動情緒、起伏大、管太多、想太多的困擾。', src:'上方暴動/相相消耗/俥俥消耗/兵兵消耗', cond:c=>(c.lb.top && (c.has_pattern('暴動') || c.consume('xiang') || c.consume('che') || c.consume('bing')))},
+  {text:'與兄弟姐妹、夫妻、平輩在互動相處時，容易會有價值觀不同、緣分較淺的狀態。', src:'分離格在左右', cond:c=>c.patterns.some(p=>p.name==='分離格' && p.desc && /左|右/.test(p.desc))},
+  {text:'與父母、長輩以及兒女、晚輩在互動相處時，容易會有價值觀不同、緣分較淺的狀態。', src:'分離格在上下', cond:c=>c.patterns.some(p=>p.name==='分離格' && p.desc && /上|下/.test(p.desc))},
+  {text:'人生容易經驗：需為父母、長輩 → 勞心、付出多的劇情。', src:'與上的位置付出遠大於收穫', cond:c=>c.posCostsMore('top')},
+  {text:'人生容易經驗：需為女性平輩、老婆 → 勞心、付出多的劇情。', src:'與左的位置付出遠大於收穫', cond:c=>c.posCostsMore('left')},
+  {text:'人生容易經驗：需為男性平輩、老公 → 勞心、付出多的劇情。', src:'與右的位置付出遠大於收穫', cond:c=>c.posCostsMore('right')},
+  {text:'人生容易經驗：需為兒女、晚輩 → 勞心、付出多的劇情。', src:'與下的位置付出遠大於收穫', cond:c=>c.posCostsMore('bottom')},
+  {text:'與父母、長輩互動相處時，會有壓力大及他們對我意見多的劇情。', src:'上方帥/將/仕/士/俥/車會威脅我們', cond:c=>c.posThreatBy('top',['shuai','shi','che'])},
+  {text:'與女性平輩、老婆互動相處時，會有壓力大及她們對我意見多的劇情。', src:'左方帥/將/仕/士/俥/車會威脅我們', cond:c=>c.posThreatBy('left',['shuai','shi','che'])},
+  {text:'與男性平輩、老公互動相處時，會有壓力大及他們對我意見多的劇情。', src:'右方帥/將/仕/士/俥/車會威脅我們', cond:c=>c.posThreatBy('right',['shuai','shi','che'])},
+  {text:'與兒女、晚輩互動相處時，會有壓力大及他們對我意見多的劇情。', src:'下方帥/將/仕/士/俥/車會威脅我們', cond:c=>c.posThreatBy('bottom',['shuai','shi','che'])},
+];
+
+const MINGE_TOTAL_OVERALL = [
+  {text:'人生容易經驗：一開始不錯，但最後容易歸零、需要重來的劇情（收穫只有原本的 20%）。', src:'通吃格', cond:c=>c.has_pattern('通吃格') && !c.has_pattern('被通吃')},
+  {text:'人生容易經驗：會因為某些外在的人、事、物、境而歸零，讓努力白費的劇情（收穫低於 20% 甚至負的）。', src:'被通吃格', cond:c=>c.has_pattern('被通吃')},
+  {text:'人生不管做什麼，常會有結果與預期不同或落差大的狀況。', src:'全黑全紅格', cond:c=>c.has_pattern('悔恨')},
+  {text:'人生容易經驗：意識顯化動能不足、情緒穩定度不高的劇情（收穫只有原本的 50%）。', src:'陰陽不協調', cond:c=>c.has_pattern('一枝獨秀','眾星拱月','鬱卒')},
+  {text:'人生容易經驗：因某些人、事、物、境而造成困擾的劇情。', src:'困擾格', cond:c=>c.has_pattern('困擾')},
+  {text:'人生容易經驗：夫妻感情困擾，甚至於離婚的劇情。', src:'離婚格（女）', cond:c=>c.has_pattern('離婚')},
+  {text:'人生容易經驗：會有付出大於收穫的劇情。', src:'付出大於收穫', cond:c=>c.scoreInfo && c.scoreInfo.net < 0},
+  {text:'人生容易經驗：總是在為別人付出的劇情。', src:'為兩個位置以上付出很多', cond:c=>['top','left','right','bottom'].filter(p=>c.posCostsMore(p)).length>=2},
+  {text:'人生容易會有：天助比較少的狀態。', src:'總格缺天格', cond:c=>!c.hasHeaven},
+  {text:'人生容易會有：人助比較少、人和比較弱、知心朋友較少的狀態。', src:'總格缺人格', cond:c=>!c.hasMan},
+  {text:'人生容易經驗：缺乏踏實感、錢比較留不下來的劇情。', src:'總格缺地格', cond:c=>!c.hasEarth},
+];
+
+const MINGE_TOTAL_HEALTH = [
+  {text:'頭部 / 身體左側 / 身體右側 / 下半身 氣血循環不好的劇情。', src:'暴動格', cond:c=>c.has_pattern('暴動','暴君')},
+  {text:'氣血循環不好的劇情。', src:'陰陽不協調', cond:c=>c.has_pattern('一枝獨秀','眾星拱月','鬱卒')},
+  {text:'支氣管、大腸的劇情。', src:'仕/士消耗或被吃', cond:c=>c.consume('shi') || c.attackerKinds.includes('shi')},
+  {text:'心血管不好的劇情。', src:'相/象消耗或被吃', cond:c=>c.consume('xiang') || c.attackerKinds.includes('xiang')},
+  {text:'肝膽、眼睛不好的劇情。', src:'俥/車消耗或被吃', cond:c=>c.consume('che') || c.attackerKinds.includes('che')},
+  {text:'關節、筋絡不好的劇情。', src:'傌/馬消耗或被吃', cond:c=>c.consume('ma') || c.attackerKinds.includes('ma')},
+  {text:'腎臟、婦科、攝護腺、骨頭、耳朵不好的劇情。', src:'炮/包消耗或被吃', cond:c=>c.consume('pao') || c.attackerKinds.includes('pao')},
+  {text:'脾胃不好的劇情。', src:'兵/卒消耗或被吃', cond:c=>c.consume('bing') || c.attackerKinds.includes('bing')},
+];
+
+const MINGE_STUDY = [
+  {text:'學習時：常會以執著的已知，來核對老師所說或書本所寫的，所以有時容易解讀錯誤而影響學習的成效。', src:'帥/將（明君）在中間', cond:c=>c.c.kind==='shuai'},
+  {text:'學習時：會因偏執的認知或情緒起伏而障礙學習的成效。', src:'自己的暴動格', cond:c=>c.has_pattern('自己暴動','自己暴君')},
+  {text:'喜歡學習，但學習時會有學以致用的障礙。', src:'傌/馬/炮/包在中間', cond:c=>['ma','pao'].includes(c.c.kind)},
+  {text:'學習時：容易會因為某些外在因素而影響學習的成效。', src:'被傌/馬/炮/包吃到', cond:c=>c.attackerKinds.some(k=>['ma','pao'].includes(k))},
+  {text:'學習時：會有學習的效率比較不好的困擾。', src:'付出大於收穫', cond:c=>c.scoreInfo && c.scoreInfo.net < 0},
+  {text:'學習時：容易因為自以為是的想法而影響學習的成效。', src:'仕仕/士士消耗', cond:c=>c.consume('shi')},
+  {text:'學習時：容易因為情緒起伏大、比較被動而影響學習的成效。', src:'相相/象象消耗', cond:c=>c.consume('xiang')},
+  {text:'學習時：容易因為過於主觀與激進而影響學習的成效。', src:'俥俥/車車消耗', cond:c=>c.consume('che')},
+  {text:'學習時：容易因為意念靜不下來、方向不定而影響學習的成效。', src:'傌傌/馬馬消耗', cond:c=>c.consume('ma')},
+  {text:'學習時：容易因為怕學不好、不知如何有效學習而影響學習的成效。', src:'炮炮/包包消耗', cond:c=>c.consume('pao')},
+  {text:'學習時：容易因為想太多、比較懶得學習而影響學習的成效。', src:'兵兵/卒卒消耗', cond:c=>c.consume('bing')},
+  {text:'學習上：會有不容易學到適合自己的東西的困擾。', src:'分離格', cond:c=>c.has_pattern('分離')},
+  {text:'學習時：容易經驗會有學習困擾的狀態。', src:'困擾格', cond:c=>c.has_pattern('困擾')},
+  {text:'學習時：會經驗學到的東西，用了一段時間之後就不用、無法累積所學的劇情。', src:'通吃格', cond:c=>c.has_pattern('通吃格') && !c.has_pattern('被通吃')},
+  {text:'學習時：容易會有因為某些外境或外在的人事物，而中斷學習，或所學被否定的狀況。', src:'被通吃格', cond:c=>c.has_pattern('被通吃')},
+  {text:'學習時：會有意識顯化動能不足的狀態。', src:'陰陽不協調', cond:c=>c.has_pattern('一枝獨秀','眾星拱月','鬱卒')},
+  {text:'學習時：會經驗所學的結果與預期不同的劇情。', src:'全黑全紅', cond:c=>c.has_pattern('悔恨')},
+  {text:'學習時：會有學習壓力大的困擾。', src:'被帥/將/仕/士/俥/車威脅', cond:c=>c.attackerKinds.some(k=>['shuai','shi','che'].includes(k))},
+];
+
+const MINGE_EMOTION = [
+  {text:'面對情感時：會因為有許多執著的認知與道理，想要掌控、會期待別人變成你想要的樣子。', src:'中間是帥/將（明君）', cond:c=>c.c.kind==='shuai'},
+  {text:'面對情感時：會因為有許多偏執的認知、想要掌控、情緒不穩定且張力大。', src:'自己的帥/將暴動格', cond:c=>c.has_pattern('自己暴動','自己暴君')},
+  {text:'面對情感時：會因為有許多做人做事的道理，會期待別人變成你想要的樣子。', src:'中間是士/車', cond:c=>['shi','che'].includes(c.c.kind)},
+  {text:'面對情感時：會因為比較被動而影響情感的交流。', src:'中間是相/象', cond:c=>c.c.kind==='xiang'},
+  {text:'對情感會有所期待，但無法如願得到所期待的情感關係。', src:'傌/馬/炮/包在中間', cond:c=>['ma','pao'].includes(c.c.kind)},
+  {text:'面對情感時：容易會有犯小人而造成損失的困擾。', src:'被傌/馬/炮/包吃到', cond:c=>c.attackerKinds.some(k=>['ma','pao'].includes(k))},
+  {text:'情感本應該是浪漫的，但面對情感時：卻少了對浪漫情感的期待。', src:'沒有同色的傌/馬/炮/包', cond:c=>!c.has('ma') && !c.has('pao') && !['ma','pao'].includes(c.c.kind)},
+  {text:'面對情感時：容易因自己的自以為是～而影響情感的交流。', src:'自己的仕仕/士士消耗', cond:c=>c.consume('shi')},
+  {text:'面對情感時：容易因情緒起伏大、比較被動～而影響情感的交流。', src:'自己的相相/象象消耗', cond:c=>c.consume('xiang')},
+  {text:'面對情感時：容易因自己過於主觀、管太多～而影響情感的交流。', src:'自己的俥俥/車車消耗', cond:c=>c.consume('che')},
+  {text:'面對情感時：會有意念靜不下來、優柔寡斷或不知如何有效地與對方相處的困擾。', src:'自己的傌傌/馬馬消耗', cond:c=>c.consume('ma')},
+  {text:'面對情感時：容易會有擔憂、恐懼、害怕失去或不知如何與對方相處的困擾。', src:'自己的炮炮/包包消耗', cond:c=>c.consume('pao')},
+  {text:'面對情感時：容易想很多，會有懶得與人互動、過於務實的狀態。', src:'自己的兵兵/卒卒消耗', cond:c=>c.consume('bing')},
+  {text:'與人談感情的時候，容易經驗因某些人事物或考量而有困擾的劇情。', src:'困擾格', cond:c=>c.has_pattern('困擾')},
+  {text:'面對情感時：與所談感情的對象 → 常會有價值觀不同、緣分較淺的困擾。', src:'分離格', cond:c=>c.has_pattern('分離')},
+  {text:'面對情感時：會有因太認真，造成對方壓力大而影響情感交流的狀況。', src:'俥傌炮/車馬包混色事業格', cond:c=>c.has_pattern('事業格')},
+  {text:'與人談感情時，容易經驗：一開始互動不錯，但最後就沒聯絡，人脈資源無法累積的劇情。', src:'通吃格', cond:c=>c.has_pattern('通吃格') && !c.has_pattern('被通吃')},
+  {text:'與人談感情時，容易經驗：因某些外境或外在的人事物而失去已建立的情感關係的劇情。', src:'被通吃格', cond:c=>c.has_pattern('被通吃')},
+  {text:'面對情感時：會有意識顯化動能不足、情緒穩定度不高的狀態。', src:'陰陽不協調', cond:c=>c.has_pattern('一枝獨秀','眾星拱月','鬱卒')},
+  {text:'與人談感情時：常會出現所得到的情感關係與預期不同的狀態。', src:'全黑全紅', cond:c=>c.has_pattern('悔恨')},
+  {text:'與人談感情時：會有付出大於收穫的狀態。', src:'付出大於收穫', cond:c=>c.scoreInfo && c.scoreInfo.net < 0},
+];
+
+const MINGE_CAREER = [
+  {text:'在工作與經營事業時，容易經驗：很想有所突破與擴展，但比較無法如願得到所期待的突破與擴展的劇情。', src:'傌/馬/炮/包在中間', cond:c=>['ma','pao'].includes(c.c.kind)},
+  {text:'在工作與經營事業時，容易經驗：犯小人、做錯決定而損失或錯失本來可以賺到的錢的劇情。', src:'被傌/馬/炮/包吃到', cond:c=>c.attackerKinds.some(k=>['ma','pao'].includes(k))},
+  {text:'在工作與經營事業時，會有做事效率比較不好、容易付出大於收穫的狀態。', src:'事業格付出大於收穫', cond:c=>c.scoreInfo && c.scoreInfo.net < 0},
+  {text:'做事的時候，容易因為自以為是的認知～而影響做事的效率與產值。', src:'自己的仕仕/士士消耗', cond:c=>c.consume('shi')},
+  {text:'做事的時候，容易經驗因為情緒起伏大、比較被動，而影響做事的效率與產值的劇情。', src:'自己的相相/象象消耗', cond:c=>c.consume('xiang')},
+  {text:'做事的時候，容易經驗因為過於主觀、太激進、管太多，而影響做事效率與產值的劇情。', src:'自己的俥俥/車車消耗', cond:c=>c.consume('che')},
+  {text:'做事的時候，容易經驗因為意念靜不下來、方向不定、心太軟，而影響做事效率與產值的劇情。', src:'自己的傌傌/馬馬消耗', cond:c=>c.consume('ma')},
+  {text:'做事的時候，容易因為恐懼擔憂、想要突破卻不知如何突破，而影響做事的效率與產值。', src:'自己的炮炮/包包消耗', cond:c=>c.consume('pao')},
+  {text:'做事的時候，容易因為想太多、行動力較弱，而影響做事的效率與產值。', src:'自己的兵兵/卒卒消耗', cond:c=>c.consume('bing')},
+  {text:'工作與事業上，容易經驗：常有糾紛、名聲受損，甚至官司的劇情。', src:'我們的仕/士被吃，仕/士吃到我們', cond:c=>(c.c.kind==='shi' && c.attackers.length>0) || c.attackerKinds.includes('shi')},
+  {text:'做事的時候，容易會出現與自己的價值觀或想要的不同的困擾。', src:'分離格', cond:c=>c.has_pattern('分離')},
+  {text:'做事的時候，容易因為某些因素或想法而造成工作上的困擾。', src:'困擾格', cond:c=>c.has_pattern('困擾')},
+  {text:'做事的時候，容易經驗：因為自己的偏執認知、情緒起伏大、常有變數～而造成損失的劇情。', src:'自己的暴動格', cond:c=>c.has_pattern('自己暴動','自己暴君')},
+  {text:'工作與事業上，容易經驗：因外在的變數～而造成損失的劇情。', src:'外在的暴動格', cond:c=>c.has_pattern('外在暴動','外在暴君')},
+  {text:'工作與事業上，容易經驗：一開始不錯，但最後容易歸零、得要重來的劇情。', src:'通吃格', cond:c=>c.has_pattern('通吃格') && !c.has_pattern('被通吃')},
+  {text:'做事的時候，容易經驗：因某些外境或外在的人事物而歸零的劇情。', src:'被通吃格', cond:c=>c.has_pattern('被通吃')},
+  {text:'做事的時候，容易經驗：意識顯化動能不足、情緒穩定度不高的劇情。', src:'陰陽不協調', cond:c=>c.has_pattern('一枝獨秀','眾星拱月','鬱卒')},
+  {text:'做事的時候，容易經驗：結果與預期不同的劇情。', src:'全黑全紅格', cond:c=>c.has_pattern('悔恨')},
+];
+
+// 運勢用條目（每條對所有 layers 2-8 跑判定，列出觸發的十年區間）
+const MINGE_DESTINY = [
+  {text:'容易經驗：很想有所突破與擴展，但無法如願得到所期待的突破與擴展的劇情', src:'傌/馬/炮/包在中間', cond:c=>['ma','pao'].includes(c.c.kind)},
+  {text:'容易經驗：犯小人、卡到陰（無形的干擾）、做錯決定而損失或錯失本來可以賺到的錢的劇情', src:'被傌/馬/炮/包吃到', cond:c=>c.attackerKinds.some(k=>['ma','pao'].includes(k))},
+  {text:'容易經驗：有糾紛、名譽受損，甚至於官司的劇情', src:'自己當局或過局的仕/士被吃，被仕/士威脅', cond:c=>(c.c.kind==='shi' && c.attackers.length>0) || c.attackerKinds.includes('shi')},
+  {text:'容易經驗：因為自己有自以為是的認知，而障礙運勢的劇情', src:'自己的仕仕/士士消耗', cond:c=>c.consume('shi')},
+  {text:'容易經驗：因為自己情緒起伏大、比較被動而障礙運勢的劇情', src:'自己的相相/象象消耗', cond:c=>c.consume('xiang')},
+  {text:'容易經驗：因為自己過於主觀、太激進、管太多而障礙運勢的劇情', src:'自己的俥俥/車車消耗', cond:c=>c.consume('che')},
+  {text:'容易經驗：因為自己意念靜不下來、方向不定而障礙運勢的劇情', src:'自己的傌傌/馬馬消耗', cond:c=>c.consume('ma')},
+  {text:'容易經驗：因為自己恐懼、擔憂、想要突破不知如何突破的劇情', src:'自己的炮炮/包包消耗', cond:c=>c.consume('pao')},
+  {text:'容易經驗：內在常會有恐懼與擔憂的感覺', src:'中間的炮/包受威脅', cond:c=>c.c.kind==='pao' && c.attackers.length>0},
+  {text:'容易經驗：因為自己想太多、行動力弱、錢容易流失的劇情', src:'自己的兵兵/卒卒消耗', cond:c=>c.consume('bing')},
+  {text:'容易經驗：有意外事故的劇情', src:'中間的傌/馬被威脅', cond:c=>c.c.kind==='ma' && c.attackers.length>0},
+  {text:'容易經驗：有車關的劇情', src:'中間的棋子被車/俥威脅', cond:c=>c.attackerKinds.includes('che')},
+  {text:'容易經驗：有血光之災的劇情', src:'中間的棋子被仕/士威脅', cond:c=>c.attackerKinds.includes('shi')},
+  {text:'容易經驗：會為父母、長輩、上司勞心、付出多或因他們而有所損失的劇情', src:'與上的位置付出遠大於收穫', cond:c=>c.posCostsMore('top')},
+  {text:'容易經驗：會為平輩女性付出多或因他們而有所損失的劇情', src:'與左的位置付出遠大於收穫（男已婚=老婆）', cond:c=>c.posCostsMore('left')},
+  {text:'容易經驗：會為平輩男性付出多或因他們而有所損失的劇情', src:'與右的位置付出遠大於收穫（女已婚=老公）', cond:c=>c.posCostsMore('right')},
+  {text:'容易經驗：會為晚輩付出多或因他們而有所損失的劇情', src:'與下的位置付出遠大於收穫', cond:c=>c.posCostsMore('bottom')},
+  {text:'容易經驗：與父母、長輩、上司相處時，他們會對我很有意見的劇情', src:'上面的帥/將/仕/士/俥/車會威脅我們', cond:c=>c.posThreatBy('top',['shuai','shi','che'])},
+  {text:'容易經驗：與平輩女性相處時，她們會對我很有意見的劇情', src:'左邊的帥/將/仕/士/俥/車會威脅我們', cond:c=>c.posThreatBy('left',['shuai','shi','che'])},
+  {text:'容易經驗：與男性平輩相處時，他們會對我很有意見的劇情', src:'右邊的帥/將/仕/士/俥/車會威脅我們', cond:c=>c.posThreatBy('right',['shuai','shi','che'])},
+  {text:'容易經驗：與晚輩相處時，他們會對我很有意見的劇情', src:'下面的帥/將/仕/士/俥/車會威脅我們', cond:c=>c.posThreatBy('bottom',['shuai','shi','che'])},
+  {text:'容易經驗：常會因為某些因素、想法而造成困擾的劇情', src:'困擾格', cond:c=>c.has_pattern('困擾')},
+  {text:'容易經驗：因自己偏執的認知與變數，而造成損失的劇情', src:'自己暴動格', cond:c=>c.has_pattern('自己暴動','自己暴君')},
+  {text:'容易經驗：因外在的變數，而造成損失的劇情', src:'外在的暴動格', cond:c=>c.has_pattern('外在暴動','外在暴君')},
+  {text:'容易經驗：一開始不錯，但最後容易歸零、得要重來的劇情', src:'通吃格', cond:c=>c.has_pattern('通吃格') && !c.has_pattern('被通吃')},
+  {text:'容易經驗：因為某些外境或外在的人事物而歸零的劇情', src:'被通吃格', cond:c=>c.has_pattern('被通吃')},
+  {text:'容易經驗：與父母兒女、長輩晚輩、上司下屬之間，有價值觀不同或緣分較淺、聚少離多的劇情', src:'上下分離格', cond:c=>c.patterns.some(p=>p.name==='分離格' && p.desc && /上|下/.test(p.desc))},
+  {text:'容易經驗：與兄弟姊妹、夫妻、平輩之間，有價值觀不同或緣分較淺、聚少離多的劇情', src:'左右分離格', cond:c=>c.patterns.some(p=>p.name==='分離格' && p.desc && /左|右/.test(p.desc))},
+  {text:'容易經驗：意識顯化動能不足、情緒起伏大的劇情', src:'陰陽不協調', cond:c=>c.has_pattern('一枝獨秀','眾星拱月','鬱卒')},
+  {text:'容易經驗：事與願違，所得到的結果與預期不同的劇情', src:'全黑全紅', cond:c=>c.has_pattern('悔恨')},
+  {text:'容易經驗：可能有生死關的劇情', src:'生死關（含 70 歲後分離格、50 歲後外暴動可吃我們）', cond:c=>c.has_pattern('生死關')},
+];
+
+// 渲染命格選單分析總表
+function buildMingeTable(layerData) {
+  // layerData = {layers: [{idx, lb, patterns, scoreInfo, fiveInfo, ageStart, ageEnd}, ...]}
+  // 建立各局 minge context
+  const ctxByIdx = {};
+  for (const ld of layerData.layers) {
+    ctxByIdx[ld.idx] = buildMingeContext(ld.lb, ld.patterns, ld.scoreInfo, ld.fiveInfo);
+  }
+  const totalCtx  = ctxByIdx[1];
+  const studyCtx  = ctxByIdx[2];
+  const emotionCtx= ctxByIdx[3];
+  const careerCtx = ctxByIdx[4];
+
+  let html = `<div class="layer-card minge-table">`;
+  html += `<div class="layer-title">📋 命格選單分析總表（書版命格選單對照）</div>`;
+  html += `<div class="item info">系統依書版命格選單自動勾選命主可能經驗的劇情。只列出已觸發項目；未列出 = 該劇情在此命盤不易呈現。</div>`;
+
+  const renderCheckedList = (items, ctx) => {
+    if (!ctx) return `<div class="minge-empty">該局尚未排盤</div>`;
+    const triggered = items.filter(it => { try { return it.cond(ctx); } catch(e){ return false; } });
+    if (triggered.length === 0) return `<div class="minge-empty">此區無已觸發項目（此命盤該主題狀態相對平穩）</div>`;
+    return triggered.map(it =>
+      `<div class="minge-yes">✓ ${it.text}<br><span class="minge-src">（觸發條件：${it.src}）</span></div>`
+    ).join('');
+  };
+
+  // 1. 總格
+  html += `<div class="minge-cat">1️⃣ 總格 — 一輩子整體呈現的狀態（1-10 歲 / 81-90 歲）</div>`;
+  html += `<div class="minge-subcat">【自己的個性與特質容易呈現的狀態】</div>`;
+  html += renderCheckedList(MINGE_TOTAL_TRAIT, totalCtx);
+  html += `<div class="minge-subcat">【與身邊的人相處互動時容易呈現的狀態】</div>`;
+  html += renderCheckedList(MINGE_TOTAL_PEOPLE, totalCtx);
+  html += `<div class="minge-subcat">【整體人生容易呈現的狀態】</div>`;
+  html += renderCheckedList(MINGE_TOTAL_OVERALL, totalCtx);
+  html += `<div class="minge-subcat">【健康上容易呈現的困擾】</div>`;
+  html += renderCheckedList(MINGE_TOTAL_HEALTH, totalCtx);
+
+  // 2. 學習格
+  html += `<div class="minge-cat">2️⃣ 學習格 — 一輩子學習狀態（11-20 歲）</div>`;
+  html += renderCheckedList(MINGE_STUDY, studyCtx);
+
+  // 3. 情感格
+  html += `<div class="minge-cat">3️⃣ 情感格 — 一輩子深交（搏感情）狀態（21-30 歲）</div>`;
+  html += renderCheckedList(MINGE_EMOTION, emotionCtx);
+
+  // 4. 事業格
+  html += `<div class="minge-cat">4️⃣ 事業格 — 一輩子工作經營事業的狀態（31-40 歲）</div>`;
+  html += renderCheckedList(MINGE_CAREER, careerCtx);
+
+  // 5. 運勢（每十年運勢，每條目跑 layers 2-8）
+  html += `<div class="minge-cat">5️⃣ 運勢 — 各十年運勢容易經驗的劇情</div>`;
+  html += `<div class="item info">每條後標示在哪個十年區間觸發；未標示=該劇情在所有十年皆未觸發。</div>`;
+  for (const item of MINGE_DESTINY) {
+    const ages = [];
+    for (let idx = 2; idx <= 8; idx++) {
+      const ctx = ctxByIdx[idx];
+      if (!ctx) continue;
+      try {
+        if (item.cond(ctx)) {
+          const ld = layerData.layers.find(l => l.idx === idx);
+          ages.push(`${ld.ageStart}-${ld.ageEnd}`);
+        }
+      } catch(e) {}
+    }
+    if (ages.length > 0) {
+      html += `<div class="minge-destiny-row">
+        <div>✓ ${item.text}<br><span class="minge-src">（觸發條件：${item.src}）</span></div>
+        <div class="minge-ages">${ages.join('｜')} 歲</div>
+      </div>`;
+    }
+  }
+
+  html += `</div>`;
+  return html;
+}
+
 function checkDaXian(layerBoard) {
   const c = layerBoard.center;
   if (!c) return null;
@@ -3187,6 +3553,8 @@ function renderNatalAnalysis() {
   };
 
   let html = '';
+  // 收集所有局資料供命格選單分析總表使用
+  const allLayersData = [];
   // 每局獨立分析
   for (const layer of NATAL_LAYERS) {
     const lb = getLayerBoard(layer.idx);
@@ -3203,6 +3571,7 @@ function renderNatalAnalysis() {
     const scoreInfo = computeScores(lb);
     const fiveInfo = analyzeFiveElements(lb);
     const daXian = checkDaXian(lb);
+    allLayersData.push({idx:layer.idx, lb, patterns, scoreInfo, fiveInfo, ageStart:ageR.start, ageEnd:ageR.end});
     html += `<div class="layer-card">`;
     html += `<div class="layer-header">`;
     html += `<div><div class="layer-title">第${layer.idx}局・${layer.name}（${layer.range}）</div></div>`;
@@ -3252,6 +3621,11 @@ function renderNatalAnalysis() {
       html += `<div class="item ${isGain?'good':'warn'}">${f.age}歲 ${f.from} → ${f.to} = ${f.gain}分（${isGain?'賺得到':'應賺未賺/勞心勞力付出'}）</div>`;
     }
     html += `</div>`;
+  }
+
+  // 命格選單分析總表（書版命格選單對照，學習自命格選單.zip 16 頁）
+  if (allLayersData.length > 0) {
+    html += buildMingeTable({layers: allLayersData});
   }
 
   target.innerHTML = html;
