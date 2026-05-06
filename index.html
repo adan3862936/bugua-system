@@ -2887,6 +2887,13 @@ function renderAnalysis(b) {
   }
   html += '</div>';
 
+  // 顯化淨化建議（單卦模式 — 書版命格選單觸發劇情自動產出咒輪紙與念誦）
+  // 重用 buildPurificationGuide 函數，傳入 isSingle:true 旗標
+  html += buildPurificationGuide({
+    isSingle: true,
+    layers: [{idx:1, lb:b, patterns, scoreInfo, fiveInfo, ageStart:0, ageEnd:0}]
+  }, '');
+
   target.innerHTML = html;
 }
 
@@ -3666,28 +3673,41 @@ function buildPurificationGuide(layerData, querentName) {
   if (!totalCtx) return '';
 
   const NAME = querentName || '○○○';
+  const isSingle = !!layerData.isSingle;
 
   // 收集已觸發的劇情，依主題分類
+  // 單卦模式：使用通用條目（總格特質/整體/健康 + 學習/情感/事業/運勢條目作為「個人狀態」共池）
+  //          因為單卦反映當下狀態，所以四大主題的條目都可能適用
   const triggered = {
     'total-trait':   MINGE_TOTAL_TRAIT.filter(it => { try { return it.cond(totalCtx); } catch(e){return false;} }),
     'total-people':  MINGE_TOTAL_PEOPLE.filter(it => { try { return it.cond(totalCtx); } catch(e){return false;} }),
     'total-overall': MINGE_TOTAL_OVERALL.filter(it => { try { return it.cond(totalCtx); } catch(e){return false;} }),
     'total-health':  MINGE_TOTAL_HEALTH.filter(it => { try { return it.cond(totalCtx); } catch(e){return false;} }),
-    'study':   ctxByIdx[2] ? MINGE_STUDY.filter(it => { try { return it.cond(ctxByIdx[2]); } catch(e){return false;} }) : [],
-    'emotion': ctxByIdx[3] ? MINGE_EMOTION.filter(it => { try { return it.cond(ctxByIdx[3]); } catch(e){return false;} }) : [],
-    'career':  ctxByIdx[4] ? MINGE_CAREER.filter(it => { try { return it.cond(ctxByIdx[4]); } catch(e){return false;} }) : [],
+    'study':   isSingle ? MINGE_STUDY.filter(it => { try { return it.cond(totalCtx); } catch(e){return false;} })
+                        : (ctxByIdx[2] ? MINGE_STUDY.filter(it => { try { return it.cond(ctxByIdx[2]); } catch(e){return false;} }) : []),
+    'emotion': isSingle ? MINGE_EMOTION.filter(it => { try { return it.cond(totalCtx); } catch(e){return false;} })
+                        : (ctxByIdx[3] ? MINGE_EMOTION.filter(it => { try { return it.cond(ctxByIdx[3]); } catch(e){return false;} }) : []),
+    'career':  isSingle ? MINGE_CAREER.filter(it => { try { return it.cond(totalCtx); } catch(e){return false;} })
+                        : (ctxByIdx[4] ? MINGE_CAREER.filter(it => { try { return it.cond(ctxByIdx[4]); } catch(e){return false;} }) : []),
   };
-  // 運勢逐十年：每條目對應「在哪些十年觸發」
-  const destinyByLayer = {};  // {idx: [items]}
-  for (let idx = 2; idx <= 8; idx++) {
-    const ctx = ctxByIdx[idx];
-    if (!ctx) continue;
-    destinyByLayer[idx] = MINGE_DESTINY.filter(it => { try { return it.cond(ctx); } catch(e){return false;} });
+  // 運勢逐十年（命盤專用）— 單卦模式不跑
+  const destinyByLayer = {};
+  if (!isSingle) {
+    for (let idx = 2; idx <= 8; idx++) {
+      const ctx = ctxByIdx[idx];
+      if (!ctx) continue;
+      destinyByLayer[idx] = MINGE_DESTINY.filter(it => { try { return it.cond(ctx); } catch(e){return false;} });
+    }
   }
+  // 單卦模式 → 把 destiny 條目當「事件相關劇情」一起跑（事件單卦會經驗的）
+  const singleDestinyTriggered = isSingle
+    ? MINGE_DESTINY.filter(it => { try { return it.cond(totalCtx); } catch(e){return false;} })
+    : [];
 
   // 統計
   const totalCount = Object.values(triggered).reduce((a,b)=>a+b.length, 0)
-                    + Object.values(destinyByLayer).reduce((a,b)=>a+b.length, 0);
+                    + Object.values(destinyByLayer).reduce((a,b)=>a+b.length, 0)
+                    + singleDestinyTriggered.length;
 
   // 陰陽協調判定（總格顏色）
   const c = totalCtx.colorCount;
@@ -3697,9 +3717,16 @@ function buildPurificationGuide(layerData, querentName) {
   else if (c.red === 5 && c.black === 0) yinyangAdvice = {type:'五紅',  text:'五紅：意識顯化的動能不足 → 多踩泥土地、觀想日出+夕陽+大地（補陰／接地）'};
   else if (c.red === 4 && c.black === 1) yinyangAdvice = {type:'四紅一黑', text:'四紅一黑：陽多陰少 → 多踩泥土地、觀想日出+夕陽+大地（補陰／接地）'};
 
+  // 沒有任何觸發 → 不顯示這個區塊（避免空白雜訊）
+  if (totalCount === 0) {
+    return '';
+  }
+
   let html = `<div class="layer-card purification-card">`;
-  html += `<div class="purif-title">📿 顯化淨化建議（依命盤觸發劇情自動產出）</div>`;
-  html += `<div class="item info">系統依書本第 10 章 P22-P29 與療癒淨化資料學習，把命盤已觸發的 ${totalCount} 項劇情整理成可直接寫在咒輪紙上的內容，並附完整療癒淨化／顯化念誦步驟。`;
+  const titleSuffix = isSingle ? '依單卦觸發劇情自動產出' : '依命盤觸發劇情自動產出';
+  html += `<div class="purif-title">📿 顯化淨化建議（${titleSuffix}）</div>`;
+  const sourceLabel = isSingle ? '單卦' : '命盤';
+  html += `<div class="item info">系統依書本第 10 章 P22-P29 與療癒淨化資料學習，把${sourceLabel}已觸發的 ${totalCount} 項劇情整理成可直接寫在咒輪紙上的內容，並附完整療癒淨化／顯化念誦步驟。`;
   html += ` 注意事項：每張咒輪紙建議 <b>2-4 支甘露</b>淨化（個人想做到的程度）；每唸一句、停留 1-2 秒，讓頻率跟上那句話再唸下一句。</div>`;
 
   // ▼▼▼ 第 1 區：療癒淨化（清理已觸發劇情）▼▼▼
@@ -3728,22 +3755,32 @@ function buildPurificationGuide(layerData, querentName) {
     html += `<br>的劇情`;
     html += `</div>`;
   };
-  if (triggered['total-trait'].length)   renderZhuluen('總格・特質',   triggered['total-trait']);
-  if (triggered['total-people'].length)  renderZhuluen('總格・互動',   triggered['total-people']);
-  if (triggered['total-overall'].length) renderZhuluen('總格・整體',   triggered['total-overall']);
-  if (triggered['total-health'].length)  renderZhuluen('總格・健康',   triggered['total-health']);
-  if (triggered['study'].length)         renderZhuluen('學習格 11-20歲', triggered['study']);
-  if (triggered['emotion'].length)       renderZhuluen('情感格 21-30歲', triggered['emotion']);
-  if (triggered['career'].length)        renderZhuluen('事業格 31-40歲', triggered['career']);
-  // 運勢逐十年
-  for (const idx of Object.keys(destinyByLayer)) {
-    const items = destinyByLayer[idx];
-    const ld = layerData.layers.find(l => l.idx === Number(idx));
-    if (!items.length || !ld) continue;
-    renderZhuluen(`運勢 ${ld.ageStart}-${ld.ageEnd}歲`, items, `第 ${idx} 局`);
-  }
-  if (totalCount === 0) {
-    html += `<div class="purif-tip">此命盤未觸發明顯需要清理的劇情，可作為定期保養之用。</div>`;
+  // 單卦模式 vs 命盤模式：標籤不同
+  if (isSingle) {
+    // 單卦：把所有觸發劇情當「事件相關劇情」整合呈現
+    if (triggered['total-trait'].length)   renderZhuluen('個性與特質',   triggered['total-trait']);
+    if (triggered['total-people'].length)  renderZhuluen('與人互動',     triggered['total-people']);
+    if (triggered['total-overall'].length) renderZhuluen('整體狀態',     triggered['total-overall']);
+    if (triggered['total-health'].length)  renderZhuluen('健康',         triggered['total-health']);
+    if (triggered['study'].length)         renderZhuluen('學習相關',     triggered['study']);
+    if (triggered['emotion'].length)       renderZhuluen('情感／人際',   triggered['emotion']);
+    if (triggered['career'].length)        renderZhuluen('事業／工作',   triggered['career']);
+    if (singleDestinyTriggered.length)     renderZhuluen('運勢／事件',   singleDestinyTriggered);
+  } else {
+    // 命盤：依書版分類（總格 4 子分類 + 學習/情感/事業 + 運勢逐十年）
+    if (triggered['total-trait'].length)   renderZhuluen('總格・特質',   triggered['total-trait']);
+    if (triggered['total-people'].length)  renderZhuluen('總格・互動',   triggered['total-people']);
+    if (triggered['total-overall'].length) renderZhuluen('總格・整體',   triggered['total-overall']);
+    if (triggered['total-health'].length)  renderZhuluen('總格・健康',   triggered['total-health']);
+    if (triggered['study'].length)         renderZhuluen('學習格 11-20歲', triggered['study']);
+    if (triggered['emotion'].length)       renderZhuluen('情感格 21-30歲', triggered['emotion']);
+    if (triggered['career'].length)        renderZhuluen('事業格 31-40歲', triggered['career']);
+    for (const idx of Object.keys(destinyByLayer)) {
+      const items = destinyByLayer[idx];
+      const ld = layerData.layers.find(l => l.idx === Number(idx));
+      if (!items.length || !ld) continue;
+      renderZhuluen(`運勢 ${ld.ageStart}-${ld.ageEnd}歲`, items, `第 ${idx} 局`);
+    }
   }
 
   // 步驟 2：下定義
