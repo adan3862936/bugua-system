@@ -1037,13 +1037,18 @@ function detectPatterns(board) {
     }
   }
 
-  // 18. 十字天助格（上中下同色 或 左中右同色 — 書版 v2.0 命名）
+  // 18. 十字天助格（書版 v2.0 — 第 6 章 p.106 — 蔡建安老師原話）
+  //     書版定義：「卦象中 ①②③ 的位置 或 ①④⑤ 的位置 為同一個顏色，像十字架一樣」
+  //     ◎ ①②③ 同色 = 中+左+右 = 橫向十字
+  //     ◎ ①④⑤ 同色 = 中+上+下 = 縱向十字
   if (center) {
+    // 縱向十字 = ①(中) + ④(上) + ⑤(下) 同色
     if (board.top && board.bottom && board.top.color === center.color && board.bottom.color === center.color) {
-      result.push({type:'good', name:'十字天助格(縱)', desc:'①②③④⑤之①②③同色（縱十字）→ 有天助、有老天看顧、時機點對了。'});
+      result.push({type:'good', name:'十字天助格(縱)', desc:'①④⑤同色（縱向十字）→ 有天助、有老天看顧、時機點對了。'});
     }
+    // 橫向十字 = ①(中) + ②(左) + ③(右) 同色
     if (board.left && board.right && board.left.color === center.color && board.right.color === center.color) {
-      result.push({type:'good', name:'十字天助格(橫)', desc:'①④⑤同色（橫十字）→ 有天助、有老天看顧、時機點對了。'});
+      result.push({type:'good', name:'十字天助格(橫)', desc:'①②③同色（橫向十字）→ 有天助、有老天看顧、時機點對了。'});
     }
   }
 
@@ -1618,7 +1623,7 @@ function buildCaiJiananNarrative(board, patterns, scoreInfo, fiveInfo, qContext)
   if (patterns.some(p => p.name === '分離格')) closing.push('• 分離格 → 清掉跟對方價值觀不同的資料');
   if (patterns.some(p => p.name.includes('暴動'))) closing.push('• 暴動格 → 清掉偏執認知和情緒的資料');
   if (patterns.some(p => p.name === '生死關')) closing.push('• ⚠ 生死關 → 必須做療癒淨化＋被通吃格的資料清理，不可忽視');
-  if (patterns.some(p => p.name === '修行緣分格')) closing.push('• 修行緣分 → ${subj}有跟神明連結的緣分，可以多做修行功課');
+  if (patterns.some(p => p.name === '修行緣分格')) closing.push(`• 修行緣分 → ${subj}有跟神明連結的緣分，可以多做修行功課`);
   if (Math.abs(colorCount.red - colorCount.black) >= 3) closing.push('• 陰陽不協調 → 多做療癒淨化清理意識資料庫，再操作下載補充能量');
   closing.push(`\n別忘了：「${subjPossessive}本質是完美的、健康的、豐盛的，只是資料庫裡有些什麼，所以才會經驗這樣的劇情。」清掉這些資料，人生劇情就會改善。`);
   sections.push({title:'蔡建安老師結語', content: closing.join('\n')});
