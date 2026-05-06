@@ -708,7 +708,7 @@
         </div>
       </div>
       <div style="font-size:11px;color:#888;margin-bottom:10px;line-height:1.5;">
-        說明：性別+婚姻會影響②③位置代表的人物（男未婚=②姊妹/女友 ③兄弟｜男已婚=②妻子 ③兄弟｜女未婚=②姊妹 ③兄弟/男友｜女已婚=②兄弟姊妹 ③丈夫）。<b>女性卜主</b>命盤會自動觸發離婚格判定（書版 v2.0）。
+        說明：性別+婚姻會影響②③位置代表的人物（男未婚=②姊妹/女友 ③兄弟｜男已婚=②妻子 ③兄弟｜女未婚=②姊妹 ③兄弟/男友｜女已婚=②兄弟姊妹 ③丈夫）。<b>女性卜主</b>命盤會自動觸發離婚格判定（書版 v2.5）。
       </div>
       <div class="picker-title">選棋子（也可以重複放）：當前選擇 <span id="cur-pick-natal">尚未選擇</span></div>
       <div class="picker-grid" id="picker-natal"></div>
@@ -2811,7 +2811,7 @@ function renderAnalysis(b) {
 
   // 🌸 書版五段式解盤（v2.0）
   html += '<div class="section" style="background:linear-gradient(135deg,#fff8e0,#fce8d0);padding:14px;border-radius:8px;border-left:5px solid #c8102e;margin-top:14px;">';
-  html += `<div class="section-title" style="color:#6b3410;font-size:16px;">🌸 書版五段式解盤（v2.3）</div>`;
+  html += `<div class="section-title" style="color:#6b3410;font-size:16px;">🌸 書版五段式解盤（v2.5）</div>`;
   html += `<div style="font-size:12px;color:#888;margin-bottom:10px;">採用《改寫人生的象棋卜卦》第 7 章標準解盤順序：狀態→互動→格局→付出收穫→健康</div>`;
   for (const sec of caiSections) {
     html += `<div style="margin-top:12px;padding:10px;background:#fff;border-radius:6px;border-left:3px solid #d4b896;">`;
@@ -4225,7 +4225,7 @@ function renderReference() {
   }
   html += '</div></div>';
 
-  html += `<div class="section"><div class="section-title">26 格局速查（書版 v2.3 — 《改寫人生的象棋卜卦》）</div>
+  html += `<div class="section"><div class="section-title">26 格局速查（書版 v2.5 — 《改寫人生的象棋卜卦》）</div>
     <div class="item">📌 <b>① 好朋友格</b>：同字異色配對（將仕象車兵=中外圍相鄰／馬=斜對／炮=跨中央有跳板）→ 互相欣賞，整盤分數減半</div>
     <div class="item">📌 <b>② 好人緣格</b>：同字異色但不符好朋友位置（看得到=相鄰或斜對；炮包除外）→ 人緣不錯，可互吃</div>
     <div class="item">📌 <b>③ 互相欣賞格</b>：黑士+紅俥 / 紅仕+黑車 → 彼此欣賞，能降低威脅能量</div>
@@ -4255,7 +4255,7 @@ function renderReference() {
   </div>`;
 
   // 書版 v2.0 — 問事 5 規則
-  html += `<div class="section"><div class="section-title">問事 5 規則（書版 v2.3）</div>
+  html += `<div class="section"><div class="section-title">問事 5 規則（書版 v2.5）</div>
     <div class="item warn">📌 <b>規則一：命盤限本人抓棋，問事單卦只能問自己或直系血親</b><br>例外：卦主不便時可說「允許某某代我抓棋」（僅限問事單卦，年運/命盤不可）</div>
     <div class="item">📌 <b>規則二：可與其它占卜搭配</b>（生命靈數、後天五行等互補）</div>
     <div class="item warn">📌 <b>規則三：問題問得越明確越好</b><br>❌ 差：跟著朋友投資房地產會不會賺錢？<br>✅ 好：朋友跟我說的「那個房地產項目」，我投資的話會不會賺錢？</div>
@@ -4264,14 +4264,14 @@ function renderReference() {
   </div>`;
 
   // 書版 v2.0 — 問法善巧
-  html += `<div class="section"><div class="section-title">問法善巧（書版 v2.3 — 取代「要不要做」式問法）</div>
+  html += `<div class="section"><div class="section-title">問法善巧（書版 v2.5 — 取代「要不要做」式問法）</div>
     <div class="item warn">❌ 不精準問法：要不要做這件事？／他愛不愛我？／某人會不會選上？</div>
     <div class="item good">✅ 善巧問法：<br>　• 我去做這件事好不好？<br>　• 我做這件事會呈現什麼狀態？<br>　• 我做這件事有沒有什麼要注意的？<br>　• 我會不會跟某某結婚？／某某的決定對我是否有好影響？<br>　• 配偶/兄弟姐妹改成「他做的事會不會讓我開心」這種延伸到自己身上的問法</div>
     <div class="item info">書版心法：「卜卦的定位不是在幫別人算命，而是在幫助一個人『認識自己』」</div>
   </div>`;
 
   // 書版 v2.0 — 標準解卦五段式順序
-  html += `<div class="section"><div class="section-title">標準解卦五段式順序（書版 v2.0）</div>
+  html += `<div class="section"><div class="section-title">標準解卦五段式順序（書版 v2.5）</div>
     <div class="item">① <b>狀態</b>：從中央以及與中央同色的棋子論卦主特質</div>
     <div class="item">② <b>互動關係</b>：跟身邊的人的互動（吃、被吃、影響力）</div>
     <div class="item">③ <b>格局及需注意的狀態</b>：含犯小人、做錯決定、需留意的意外</div>
@@ -4312,13 +4312,13 @@ function renderReference() {
     <div class="item">🔮 <b>命盤</b> 看一輩子，32 支棋拆 8 局（每局重疊「上=前局下」），一輩子只能摸一次（除非顯化淨化過）</div>
     <div class="item">❓ <b>事件卦</b> 問具體事，全紅全黑 = 老天爺不答可換問法重來</div>
     <div class="item">🔄 <b>前世因果</b> 看前世身分、跟某人的前世關係</div>
-    <div class="item info">🆕 <b>療癒淨化效果卦</b>（書版 v2.0）：問「我療癒淨化的效果如何？」只看收穫不算付出</div>
+    <div class="item info">🆕 <b>療癒淨化效果卦</b>（書版 v2.5）：問「我療癒淨化的效果如何？」只看收穫不算付出</div>
     <div class="item warn">⚠ 一事一卦，不準也不能重複問同件事（除非設定期間如「3個月後再卜」或療癒淨化後）</div>
     <div class="item info">🆕 <b>命盤重排判定</b>：療癒淨化後想重排命盤，先卜單卦，中央=兵卒+乾淨好朋友格 → 可重排</div>
   </div>`;
 
   // 書版 v2.0 — 吃與被吃棋子的衍伸解釋表
-  html += `<div class="section"><div class="section-title">吃與被吃棋子的衍伸解釋表（書版 v2.0 — 第7章）</div>
+  html += `<div class="section"><div class="section-title">吃與被吃棋子的衍伸解釋表（書版 v2.5 — 第7章）</div>
     <div style="overflow-x:auto;">
     <table style="width:100%;border-collapse:collapse;font-size:13px;">
       <thead style="background:#fce8d0;color:#6b3410;">
@@ -4344,7 +4344,7 @@ function renderReference() {
   </div>`;
 
   // 書版 v2.0 — 前世關係判定表
-  html += `<div class="section"><div class="section-title">前世關係判定（書版 v2.0 — 第9章）</div>
+  html += `<div class="section"><div class="section-title">前世關係判定（書版 v2.5 — 第9章）</div>
     <div class="item info">前世卦看「卦主-對象」二棋的位置與棋種對應</div>
     <div class="item"><b>🔴 兵卒（直系血親較多）</b><br>　• ①兵+②卒：對方是你的妻子｜①兵+③卒：對方是兄弟姊妹<br>　• ①卒+③兵：對方是你的老公｜①卒+②兵：對方是兄弟姊妹<br>　• ①+④（中與上）：父母｜①+⑤（中與下）：子女<br>　• ④+⑤（上與下）：祖父母與孫子｜②+③（左右）：非直系血親兄弟姊妹<br>　• 斜對（②④/②⑤/③④/③⑤）：叔伯、姑嬸、舅舅、阿姨、姪子姪女</div>
     <div class="item"><b>🟣 炮包（情人類）</b><br>　• 炮包相鄰／偏桃花（①②/①③/①④/①⑤）：短暫的情人<br>　• 炮包隔山／正桃花（②③/④⑤）：外遇對象、情人或小妾<br>　• 炮包斜對／偏桃花（②④/②⑤/③④/③⑤）：有情慾但沒有真正交流的對象</div>
@@ -4357,7 +4357,7 @@ function renderReference() {
   </div>`;
 
   // 書版 v2.0 — 暴動格人體部位對照
-  html += `<div class="section"><div class="section-title">暴動格人體部位對應（書版 v2.0 — 鏡像）</div>
+  html += `<div class="section"><div class="section-title">暴動格人體部位對應（書版 v2.5 — 鏡像）</div>
     <div class="item info">棋盤位置 ↔ 人體部位（卦象的位置與人體左右剛好相反，因為棋盤是「面對我們的人」）</div>
     <div class="item">① 中央 → 脖子以下、肚臍以上（軀幹中央氣血循環）</div>
     <div class="item">② 左 → 身體<b>右側</b>（鏡像）</div>
@@ -4368,7 +4368,7 @@ function renderReference() {
   </div>`;
 
   // 書版 v2.0 — 療癒淨化效果判定表
-  html += `<div class="section"><div class="section-title">療癒淨化效果判定表（書版 v2.0 — 第10章）</div>
+  html += `<div class="section"><div class="section-title">療癒淨化效果判定表（書版 v2.5 — 第10章）</div>
     <div class="item info">問法：「<b>我療癒淨化／刪除資料的效果如何？</b>」<br>解卦：<b>只看「有沒有得吃」或「有沒有收穫」，不算付出</b></div>
     <div class="item">📌 <b>兵卒好朋友格</b>：方法正確且已清理到真正根源</div>
     <div class="item">📌 <b>其他好朋友格 / 相鄰明君格</b>：方法跟方向是正確的</div>
@@ -4405,7 +4405,7 @@ function renderReference() {
   </div>`;
 
   // 書版 v2.0 — 卦象中不同位置代表的角色（依卜主性別+婚姻狀態）
-  html += `<div class="section"><div class="section-title">位置代表的角色（書版 v2.0 — 第5章）</div>
+  html += `<div class="section"><div class="section-title">位置代表的角色（書版 v2.5 — 第5章）</div>
     <div class="item info">通用：①中=自己／④上=長輩(年齡>10歲)／⑤下=晚輩(年齡<10歲)<br>口訣：左手比較沒力 → ②左=女生；右手比較有力 → ③右=男生</div>
     <div class="item"><b>👨 男性卜主</b><br>　• 未婚：②姊妹/女朋友/女性平輩｜③兄弟/男性平輩<br>　• 已婚：②妻子/女性平輩｜③兄弟/男性平輩<br>　• 男性結婚前後跟兄弟關係不變，但跟姊妹會不一樣</div>
     <div class="item"><b>👩 女性卜主</b><br>　• 未婚：②姊妹/女性平輩｜③兄弟/男朋友/男性平輩<br>　• 已婚：②兄弟姊妹/女性平輩｜③丈夫/男性平輩<br>　• 女性結婚前後跟姊妹關係不變，但跟兄弟會不一樣（看法位置從③改看②）</div>
