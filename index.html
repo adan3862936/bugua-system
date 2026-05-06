@@ -526,7 +526,10 @@
   <!-- 命盤 -->
   <div class="panel" id="panel-natal">
     <div class="help">
-      <b>命盤 32 子輸入：</b>依序摸 32 支棋（一輩子只能摸一次），按順序輸入下方格子。系統會自動拆成 7 個五子局（每局重疊一支），對應總格、學習格、情感格、事業格、41-50、51-60、61-70/71-80。
+      <b>命盤 32 子輸入：</b>依序摸 32 支棋（一輩子只能摸一次），按順序輸入下方格子。系統依書版 IMG_0819 拆成 8 個五子局（每局新增 4 支，「上」=前一局的「下」，最後一局「下」回到第 1 支）：<br>
+      ① 總格（1-10歲／81-90歲）：中1+左2+右3+上4+下5｜② 學習格（11-20歲）：中6+左7+右8+上5+下9｜③ 情感格（21-30歲）：中10+左11+右12+上9+下13<br>
+      ④ 事業格（31-40歲）：中14+左15+右16+上13+下17｜⑤ 41-50歲：中18+左19+右20+上17+下21｜⑥ 51-60歲：中22+左23+右24+上21+下25<br>
+      ⑦ 61-70歲：中26+左27+右28+上25+下29｜⑧ 71-80歲：中30+左31+右32+上29+下1（回到總格中）
       <br><b>用法：</b>先在下方點選棋子 → 再依序點 1～32 號格子放入。
     </div>
     <div class="natal-input">
@@ -773,8 +776,13 @@ function isGoodLuckPair(b, p1pos, p2pos) {
   return !isFriendPairStrict(b, p1pos, p2pos);
 }
 
-/* ===== 格局偵測 ===== */
-function detectPatterns(board) {
+/* ===== 格局偵測 =====
+   context（可選，命盤呼叫時傳入）：
+     { isMingPan: true, layerNum: 1-8, ageStart, ageEnd, prevLayer? }
+   不傳 context 時，書版「生死關」一律不觸發（單卦/年運/卜卦都不論生死關）。
+*/
+function detectPatterns(board, context) {
+  context = context || null;
   const result = [];
   const presentPos = POSITIONS.filter(p => board[p]);
   const center = board.center;
@@ -1244,26 +1252,161 @@ function detectPatterns(board) {
     }
   }
 
-  // 23. 生死關（命盤十年運專用 — 書版 v2.0 新增）
-  //     被通吃格 + 中央棋無能力與外圍抗衡或跑掉
-  //     死因判讀依被吃中央棋
-  if (center) {
-    const allUnprotected = result.some(r => r.name === '被通吃格');
-    if (allUnprotected) {
-      const centerCanRun = POSITIONS.some(p => p !== 'center' && board[p] && canEat(board, 'center', p));
-      if (!centerCanRun) {
-        const deathCauseMap = {
-          shi:'肺、支氣管、大腸（呼吸系統）',
-          xiang:'心血管疾病',
-          ma:'意外（馬被吃常代表意外）',
-          pao:'腎、泌尿、婦科、攝護腺',
-          bing:'脾胃、口腔（消化系統）',
-          shuai:'重大關卡',
-          che:'車禍、肝膽免疫'
-        };
-        result.push({type:'warn', name:'生死關',
-          desc:`被通吃且中央無能力反吃跑掉 → 命盤十年運中的重大關卡。可能死因：${deathCauseMap[center.kind] || '對應系統'}。（命盤十年運專用，單卦/年運不看；總格不看）`});
+  // 23. 生死關（書版 P31-P32 完整規則 — 限命盤十年運局 2-8）
+  //     範圍硬擋：未傳 context、非命盤、或為總格（layerNum=1）→ 一律不觸發
+  //     共 9 層（A 一般／B 50後／C 70後／D 81後／E 陰陽異常／F 死因器官／G 死因方式／H 避掉條件／I 範圍）
+  if (center && context && context.isMingPan && context.layerNum >= 2) {
+    const ageStart = context.ageStart || 0;
+    const ageEnd   = context.ageEnd   || 0;
+
+    // 死因對照（被吃中央棋）— 書版 P31
+    const deathCauseByVictim = {
+      shi:'呼吸系統、肺或大腸',
+      xiang:'心血管疾病的因素',
+      ma:'發生意外',
+      pao:'腎臟或婦科的問題',
+      bing:'脾胃、消化系統、免疫系統的問題',
+      shuai:'重大關卡',
+      che:'肝膽、行車相關'
+    };
+    // 死因對照（中央被誰吃）— 書版 P31
+    const deathCauseByAttacker = {
+      shuai:'很高機率因為意外，亦有其他可能性',
+      shi:'刀關（開刀，或因爭執被人加害）',
+      xiang:'跟心臟血管疾病有關',
+      che:'跟心臟血管疾病有關',
+      bing:'脾胃、消化系統、免疫系統的問題'
+    };
+
+    // 中央能否吃任何外圍（含同色／異色）→ 用於 A 條件「中央可不可以反吃」
+    const centerCanEatAny = POSITIONS.some(p => p !== 'center' && board[p] && canEat(board, 'center', p));
+    // 中央能否吃「異色」外圍 → 過局往上吃也算「出得去」，但這裡先以同盤反吃判定
+    const centerCanFightBack = POSITIONS.some(p => p !== 'center' && board[p] && board[p].color !== center.color && canEat(board, 'center', p));
+
+    // 列出能吃中央的攻擊者（無保護）
+    const attackers = [];
+    for (const p of POSITIONS) {
+      if (p === 'center' || !board[p]) continue;
+      if (board[p].color === center.color) continue;
+      if (canEat(board, p, 'center') && !isProtected(board, 'center', p)) {
+        attackers.push({pos:p, piece:board[p]});
       }
+    }
+    // 81 歲後判定：含被保護的能吃中央者也算
+    const attackersIgnoreProtect = [];
+    for (const p of POSITIONS) {
+      if (p === 'center' || !board[p]) continue;
+      if (board[p].color === center.color) continue;
+      if (canEat(board, p, 'center')) {
+        attackersIgnoreProtect.push({pos:p, piece:board[p]});
+      }
+    }
+
+    // 既有判讀：被通吃格已存在 → 已是嚴重訊號
+    const isAllEatenPattern = result.some(r => r.name === '被通吃格');
+
+    // 共用：建構死因敘述
+    const buildCause = (att) => {
+      const byVictim = deathCauseByVictim[center.kind] || '對應器官系統';
+      const byAttacker = att && deathCauseByAttacker[att.piece.kind] ? `；被${att.piece.name}吃→${deathCauseByAttacker[att.piece.kind]}` : '';
+      return `中央${center.name}被吃對應：${byVictim}${byAttacker}`;
+    };
+
+    // 收集觸發理由
+    const reasons = [];
+    let triggered = false;
+    let mainAttacker = attackers[0] || null;
+
+    // ▶ A：一般原則 — 中央無路（不能反吃）+ 至少一支能吃中央且無保護；若中央能反吃同攻擊者 → 不算
+    if (attackers.length > 0 && !centerCanFightBack) {
+      reasons.push('一般原則：中央無法反吃外圍且無保護被吃');
+      triggered = true;
+    }
+
+    // ▶ B：50 歲後特例 — 別色將/帥暴動可吃我方 + 中央雖可跑但人生不順（系統暫以「該局有暴動格 + 該局有被通吃跡象」近似判斷）
+    if (ageStart >= 50) {
+      const hasOpposingShuaiAttack = POSITIONS.some(p => {
+        if (p === 'center' || !board[p]) return false;
+        if (board[p].kind !== 'shuai') return false;
+        if (board[p].color === center.color) return false;
+        return canEat(board, p, 'center');
+      });
+      const hasBaodong = result.some(r => r.name && r.name.includes('暴動'));
+      if (hasOpposingShuaiAttack && hasBaodong) {
+        reasons.push('50歲後特例：別色將/帥暴動可吃中央');
+        triggered = true;
+      }
+    }
+
+    // ▶ C：70 歲後特例 — 出現分離格 → 壽魂想離開
+    if (ageStart >= 70) {
+      const hasSplit = result.some(r => r.name === '分離格');
+      if (hasSplit) {
+        reasons.push('70歲後特例：分離格 → 壽魂想離開的可能');
+        triggered = true;
+      }
+    }
+
+    // ▶ D：81 歲後特殊判定 — 不論保護，只要能被吃就算；但中央能反吃 → 不算
+    if (ageStart >= 81) {
+      if (attackersIgnoreProtect.length > 0 && !centerCanFightBack) {
+        reasons.push('81歲後特殊判定：中央可被吃即算（不論保護）');
+        triggered = true;
+        if (!mainAttacker) mainAttacker = attackersIgnoreProtect[0];
+      }
+      const hasFriendBoard = result.some(r => r.name && (r.name.includes('好朋友') || r.name === '好朋友格'));
+      if (hasFriendBoard && attackersIgnoreProtect.length > 0) {
+        reasons.push('81歲後好朋友格被吃可能性大');
+      }
+      const hasRegret = result.some(r => r.name && r.name.includes('悔恨'));
+      if (hasRegret && attackersIgnoreProtect.length > 0) {
+        reasons.push('81歲後悔恨格也有機率構成');
+      }
+    }
+
+    // ▶ E：陰陽不協調／悔恨／兵卒消耗／包炮消耗 + 動能不足 → 「生死關可能性」（提示而非確定）
+    const hasYinYangBad = result.some(r => r.name && (r.name.includes('一枝獨秀') || r.name.includes('眾星拱月') || r.name.includes('鬱卒') || r.name.includes('悔恨')));
+    const hasConsume = result.some(r => r.name && r.name.includes('消耗'));
+    const isPaoCenterWeak = (center.kind === 'pao') && !centerCanEatAny;
+    const isBingCenterConsume = (center.kind === 'bing') && hasConsume;
+    if ((hasYinYangBad || hasConsume) && (isPaoCenterWeak || isBingCenterConsume || isAllEatenPattern)) {
+      reasons.push('陰陽不協調/消耗 + 中央動能不足 → 生死關「可能性」');
+      // 這條只列「可能性」，若 A/B/C/D 沒觸發，也標一個提示但不當主觸發
+      if (!triggered) {
+        result.push({type:'warn', name:'生死關（可能性）',
+          desc:`${reasons[reasons.length-1]}。建議做生死關的療癒淨化。${buildCause(null)}（命盤第${context.layerNum}局・${context.ageStart}-${context.ageEnd}歲）`});
+      }
+    }
+
+    if (triggered) {
+      // ▶ H：避掉生死關的可能性（4 條）
+      const escapeReasons = [];
+
+      // (1) 30 歲前 + 總格（context.totalLayer）有象/相 → 天助
+      if (ageEnd <= 30 && context.totalHasXiang) {
+        escapeReasons.push('30歲前生死關，總格有象/相 → 可因天助而避過');
+      }
+      // (2) 總格自己包/炮/馬/傌可吃別人 → 神明力量
+      if (context.totalSelfPaoMaCanEat) {
+        escapeReasons.push('總格自己包炮馬傌能吃對方 → 有神明力量可避過（仍建議清理）');
+      }
+      // (3) 總格自己棋可吃不同色象/相 → 累世修行
+      if (context.totalSelfCanEatXiang) {
+        escapeReasons.push('總格自己棋可吃不同色象/相 → 累世修行可避過（仍建議清理）');
+      }
+      // (4) 當局為雨傘格、十字天助格、或中央象/相
+      const hasUmbrella = result.some(r => r.name && (r.name.includes('雨傘')));
+      const hasCross    = result.some(r => r.name && (r.name.includes('十字天助') || r.name.includes('十字天柱')));
+      if (hasUmbrella || hasCross || center.kind === 'xiang') {
+        escapeReasons.push(`當局有${hasUmbrella?'雨傘格':''}${hasCross?'十字天助格':''}${center.kind==='xiang'?'中央為象/相':''} → 有機會避過（仍建議清理）`);
+      }
+
+      const escapeText = escapeReasons.length > 0
+        ? ` ｜避過可能性：${escapeReasons.join('；')}`
+        : '';
+
+      result.push({type:'warn', name:'生死關',
+        desc:`命盤第${context.layerNum}局・${context.ageStart}-${context.ageEnd}歲：${reasons.join('；')}。${buildCause(mainAttacker)}${escapeText}（命盤十年運專用，總格/單卦/年運不論）`});
     }
   }
 
@@ -2629,27 +2772,47 @@ function renderNatalGrid() {
   }
 }
 
-// 命盤拆分為 7 個五子局（每局重疊一支）
-// 第 N 局：棋 [4N, 4N+1, 4N+2, 4N+3, 4N+4]，最後一局取第 1 支補回
-// 但實際課堂教法是每 5 支一組，重疊一支 → 共 (32-1)/4 = 7.75 ≈ 7 局
-// 第 1 局：1-5；第 2 局：5-9；第 3 局：9-13；第 4 局：13-17；第 5 局：17-21；第 6 局：21-25；第 7 局：25-29；第 8 局：29-32+1
-// 共 8 局實際；課堂主要看前 7-8 局，標準設定為 7 局對應 11-80 歲
+// 命盤拆分為 8 個五子局（每局重疊一支「上=前一局的下」） — 書版 IMG_0819 公式
+//   局 1（總格／1-10歲＋81-90歲）：中=1, 左=2, 右=3, 上=4, 下=5
+//   局 2（學習格／11-20歲）：中=6, 左=7, 右=8, 上=5, 下=9
+//   局 3（情感格／21-30歲）：中=10, 左=11, 右=12, 上=9, 下=13
+//   局 4（事業格／31-40歲）：中=14, 左=15, 右=16, 上=13, 下=17
+//   局 5（41-50歲）：中=18, 左=19, 右=20, 上=17, 下=21
+//   局 6（51-60歲）：中=22, 左=23, 右=24, 上=21, 下=25
+//   局 7（61-70歲）：中=26, 左=27, 右=28, 上=25, 下=29
+//   局 8（71-80歲）：中=30, 左=31, 右=32, 上=29, 下=1（回到總格中）
+// 規律：每局新增 4 支（中/左/右/下），「上」取自前一局「下」；最後一局「下」回到第 1 支。
 const NATAL_LAYERS = [
-  {name:'總格',     range:'一輩子', startIdx:0,  age:'總格'},
-  {name:'學習格',   range:'11-20歲', startIdx:4,  age:'11-20'},
-  {name:'情感格',   range:'21-30歲', startIdx:8,  age:'21-30'},
-  {name:'事業格',   range:'31-40歲', startIdx:12, age:'31-40'},
-  {name:'桃花/變化', range:'41-50歲', startIdx:16, age:'41-50'},
-  {name:'運勢',     range:'51-60歲', startIdx:20, age:'51-60'},
-  {name:'晚年',     range:'61-70歲', startIdx:24, age:'61-70'},
-  {name:'大限',     range:'71-80歲', startIdx:28, age:'71-80'},
+  {idx:1, name:'總格',     range:'1-10歲／81-90歲', age:'1-10/81-90'},
+  {idx:2, name:'學習格',   range:'11-20歲',         age:'11-20'},
+  {idx:3, name:'情感格',   range:'21-30歲',         age:'21-30'},
+  {idx:4, name:'事業格',   range:'31-40歲',         age:'31-40'},
+  {idx:5, name:'第五局',   range:'41-50歲',         age:'41-50'},
+  {idx:6, name:'第六局',   range:'51-60歲',         age:'51-60'},
+  {idx:7, name:'第七局',   range:'61-70歲',         age:'61-70'},
+  {idx:8, name:'第八局',   range:'71-80歲',         age:'71-80'},
 ];
 
-function getLayerBoard(startIdx) {
-  // 5 支：中、左、右、上、下（依摸棋順序：第1=中, 2=左, 3=右, 4=上, 5=下）
-  const seq = [natalBoard[startIdx], natalBoard[startIdx+1], natalBoard[startIdx+2], natalBoard[startIdx+3], natalBoard[(startIdx+4)%32]];
+// layerNum: 1-8（書版正確公式）
+function getLayerBoard(layerNum) {
+  let cIdx, lIdx, rIdx, tIdx, bIdx;
+  if (layerNum === 1) {
+    cIdx = 0; lIdx = 1; rIdx = 2; tIdx = 3; bIdx = 4;
+  } else {
+    const base = (layerNum - 1) * 4;       // 4, 8, 12, 16, 20, 24, 28
+    cIdx = base + 1;                       // 中
+    lIdx = base + 2;                       // 左
+    rIdx = base + 3;                       // 右
+    tIdx = base;                           // 上 = 前一局「下」
+    bIdx = (base + 4) % 32;                // 下；局 8 時 (28+4)%32=0 → 回到第 1 支
+  }
   return {
-    center: seq[0], left: seq[1], right: seq[2], top: seq[3], bottom: seq[4]
+    center: natalBoard[cIdx],
+    left:   natalBoard[lIdx],
+    right:  natalBoard[rIdx],
+    top:    natalBoard[tIdx],
+    bottom: natalBoard[bIdx],
+    _idx:   { center:cIdx, left:lIdx, right:rIdx, top:tIdx, bottom:bIdx }
   };
 }
 
@@ -2657,8 +2820,8 @@ function getLayerBoard(startIdx) {
 function analyzeCrossLayer() {
   const found = [];
   for (let i = 1; i < NATAL_LAYERS.length; i++) {
-    const cur = getLayerBoard(NATAL_LAYERS[i].startIdx);
-    const prev = getLayerBoard(NATAL_LAYERS[i-1].startIdx);
+    const cur = getLayerBoard(NATAL_LAYERS[i].idx);
+    const prev = getLayerBoard(NATAL_LAYERS[i-1].idx);
     if (!cur.center) continue;
     // 中央往上局直線吃（車）或隔空吃（炮）
     const c = cur.center;
@@ -2714,18 +2877,54 @@ function renderNatalAnalysis() {
     target.innerHTML = '<div class="empty-msg">請先輸入 32 支棋。</div>';
     return;
   }
+
+  // 先行計算「總格」的避掉條件（書版 H 條：總格有象相、總格自己包炮馬傌可吃別人、總格自己棋可吃不同色象相）
+  const totalLayer = getLayerBoard(1);
+  let totalHasXiang = false, totalSelfPaoMaCanEat = false, totalSelfCanEatXiang = false;
+  if (totalLayer.center) {
+    // 1) 總格有象/相（自己或別人皆算）
+    totalHasXiang = POSITIONS.some(p => totalLayer[p] && totalLayer[p].kind === 'xiang');
+    // 2) 總格自己（同色於中央）的包/炮/馬/傌可以吃到任意異色棋
+    const myColor = totalLayer.center.color;
+    totalSelfPaoMaCanEat = POSITIONS.some(p => {
+      if (!totalLayer[p] || totalLayer[p].color !== myColor) return false;
+      if (!['pao','ma'].includes(totalLayer[p].kind)) return false;
+      return POSITIONS.some(q => q !== p && totalLayer[q] && totalLayer[q].color !== myColor && canEat(totalLayer, p, q));
+    });
+    // 3) 總格自己的棋可以吃到不同色的象/相
+    totalSelfCanEatXiang = POSITIONS.some(p => {
+      if (!totalLayer[p] || totalLayer[p].color !== myColor) return false;
+      return POSITIONS.some(q => q !== p && totalLayer[q] && totalLayer[q].kind === 'xiang' && totalLayer[q].color !== myColor && canEat(totalLayer, p, q));
+    });
+  }
+
+  // 解析年齡範圍 → ageStart, ageEnd（總格特殊：1-10/81-90）
+  const parseAge = (age) => {
+    if (age === '1-10/81-90') return {start:1, end:10};
+    const m = age.match(/^(\d+)-(\d+)$/);
+    return m ? {start:+m[1], end:+m[2]} : {start:0, end:0};
+  };
+
   let html = '';
   // 每局獨立分析
   for (const layer of NATAL_LAYERS) {
-    const lb = getLayerBoard(layer.startIdx);
+    const lb = getLayerBoard(layer.idx);
     if (!lb.center) continue;
-    const patterns = detectPatterns(lb);
+    const ageR = parseAge(layer.age);
+    const context = {
+      isMingPan: true,
+      layerNum: layer.idx,
+      ageStart: ageR.start,
+      ageEnd: ageR.end,
+      totalHasXiang, totalSelfPaoMaCanEat, totalSelfCanEatXiang
+    };
+    const patterns = detectPatterns(lb, context);
     const scoreInfo = computeScores(lb);
     const fiveInfo = analyzeFiveElements(lb);
     const daXian = checkDaXian(lb);
     html += `<div class="layer-card">`;
     html += `<div class="layer-header">`;
-    html += `<div><div class="layer-title">第${NATAL_LAYERS.indexOf(layer)+1}局・${layer.name}（${layer.range}）</div></div>`;
+    html += `<div><div class="layer-title">第${layer.idx}局・${layer.name}（${layer.range}）</div></div>`;
     html += `<div class="layer-mini-board">`;
     for (const p of ['left','center','right','top','bottom']) {
       const pp = lb[p];
@@ -2939,7 +3138,7 @@ function renderReference() {
     <div class="item">📌 <b>㉓ 雨傘格</b>：②③④同色 → 有天助（撐傘看不到天，心情會悶）。命盤最後一局=這輩子是輪迴最後一世</div>
     <div class="item good">📌 <b>㉔ 十字天助格</b>：①②③同色 + ④⑤異色（橫向）<b>或</b> ①④⑤同色 + ②③異色（縱向）→ 純粹十字架形狀，有天助、有老天看顧、時機對了。注意：另外兩支必須跟中央異色，否則就變成雨傘格/眾星拱月/悔恨格</div>
     <div class="item good">📌 <b>㉕ 修行緣分格</b>（命盤）：中央相象+同色傌馬炮包/中央傌馬炮包/有雨傘十字天助 → 跟神明有連結</div>
-    <div class="item warn">📌 <b>㉖ 生死關</b>（命盤十年運）：被通吃+中央無能力反吃跑掉 → 十年運中的重大關卡（可能壽終）</div>
+    <div class="item warn">📌 <b>㉖ 生死關</b>（書版 P31-P32，僅限命盤十年運局 2-8）：A. 中央無路+無保護+至少一支可吃 ｜B. 50歲後別色將/帥暴動可吃 ｜C. 70歲後出現分離格 ｜D. 81歲後不論保護只要能被吃就算（好朋友/悔恨格機率大）｜E. 陰陽不協調/消耗+包炮動能不足 → 可能性。死因：被吃中央=器官系統；被誰吃=死因方式。避過：總格象相+30歲前/總格自己包炮馬傌可吃別人/總格自己可吃不同色象相/當局雨傘十字天助/中央象相</div>
   </div>`;
 
   // 書版 v2.0 — 問事 5 規則
@@ -2997,7 +3196,7 @@ function renderReference() {
 
   html += `<div class="section"><div class="section-title">卦種用途</div>
     <div class="item">📅 <b>周卦</b> 看 3-7 天 ／ 月卦看一個月 ／ 年卦看一整年方向</div>
-    <div class="item">🔮 <b>命盤</b> 看一輩子，32 支棋拆 7 局，一輩子只能摸一次（除非顯化淨化過）</div>
+    <div class="item">🔮 <b>命盤</b> 看一輩子，32 支棋拆 8 局（每局重疊「上=前局下」），一輩子只能摸一次（除非顯化淨化過）</div>
     <div class="item">❓ <b>事件卦</b> 問具體事，全紅全黑 = 老天爺不答可換問法重來</div>
     <div class="item">🔄 <b>前世因果</b> 看前世身分、跟某人的前世關係</div>
     <div class="item info">🆕 <b>療癒淨化效果卦</b>（書版 v2.0）：問「我療癒淨化的效果如何？」只看收穫不算付出</div>
