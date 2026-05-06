@@ -622,6 +622,28 @@
       <br><b>用法：</b>先在下方點選棋子 → 再依序點 1～32 號格子放入。
     </div>
     <div class="natal-input">
+      <!-- 卜主性別＋婚姻狀態（影響②③位置代表角色 + 女命盤離婚格判定） -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+        <div>
+          <label style="display:block;font-size:13px;color:#6b3410;font-weight:600;margin-bottom:6px;">卜主性別（影響位置代表角色＋女命盤離婚格判定）</label>
+          <select id="natal-querent-gender" style="width:100%;padding:8px;border:2px solid #d4b896;border-radius:6px;font-size:13px;background:#fff;">
+            <option value="">未指定（用通用）</option>
+            <option value="male">👨 男性</option>
+            <option value="female">👩 女性</option>
+          </select>
+        </div>
+        <div>
+          <label style="display:block;font-size:13px;color:#6b3410;font-weight:600;margin-bottom:6px;">婚姻狀態</label>
+          <select id="natal-querent-married" style="width:100%;padding:8px;border:2px solid #d4b896;border-radius:6px;font-size:13px;background:#fff;">
+            <option value="">未指定</option>
+            <option value="no">未婚</option>
+            <option value="yes">已婚</option>
+          </select>
+        </div>
+      </div>
+      <div style="font-size:11px;color:#888;margin-bottom:10px;line-height:1.5;">
+        說明：性別+婚姻會影響②③位置代表的人物（男未婚=②姊妹/女友 ③兄弟｜男已婚=②妻子 ③兄弟｜女未婚=②姊妹 ③兄弟/男友｜女已婚=②兄弟姊妹 ③丈夫）。<b>女性卜主</b>命盤會自動觸發離婚格判定（書版 v2.0）。
+      </div>
       <div class="picker-title">選棋子（也可以重複放）：當前選擇 <span id="cur-pick-natal">尚未選擇</span></div>
       <div class="picker-grid" id="picker-natal"></div>
       <div style="margin-top:10px;">
@@ -1515,8 +1537,10 @@ function detectPatterns(board, context) {
   // 24. 離婚格（女命盤總格專用 — 書版 v2.0 新增）
   //     6 種狀況累計（次數越多離越多次）
   //     注意：男命盤看不出來
-  //     需 UI 端傳入「卦主性別=女」才應用，這裡只回報標記
-  const divorceTrigs = [];
+  //     僅在「命盤總格 + 卜主性別=女」時觸發；其他情況不論
+  const isFemaleNatalTotal = context && context.isMingPan && context.layerNum === 1 && context.gender === 'female';
+  const divorceTrigs = isFemaleNatalTotal ? [] : null;
+  if (isFemaleNatalTotal) {
   // 1. 第一隻是將、帥、黑士、黑車（紅仕、紅俥不算）
   if (center && (center.name === '將' || center.name === '帥' || center.name === '士' || center.name === '車')) {
     if (center.name === '士' || center.name === '車') {
@@ -1553,8 +1577,9 @@ function detectPatterns(board, context) {
   }
   if (divorceTrigs.length > 0) {
     result.push({type:'warn', name:'離婚格(女命盤)',
-      desc:`若卦主為女性且為命盤總格 → 累計 ${divorceTrigs.length} 項離婚劇情：${divorceTrigs.join('；')}。次數越多代表會經驗越多次離婚。男命盤不看此格。`});
+      desc:`女性卜主命盤總格 → 累計 ${divorceTrigs.length} 項離婚劇情：${divorceTrigs.join('；')}。次數越多代表會經驗越多次離婚。`});
   }
+  } // end if isFemaleNatalTotal
 
   return result;
 }
@@ -2957,11 +2982,30 @@ function analyzeCrossLayer() {
    - 局 4 事業格(31-40)：做事能力／效率／賺錢運／當期運勢
    - 局 5-8 (41-80歲)：特質／互動／格局／付出收穫／過局往上吃／健康
 */
-function buildDetailedNarrative(layer, lb, prevLb, patterns, scoreInfo, fiveInfo) {
+function buildDetailedNarrative(layer, lb, prevLb, patterns, scoreInfo, fiveInfo, querentCtx) {
   const c = lb.center;
   if (!c) return '';
 
-  const POS_LABEL = {center:'中央', left:'左', right:'右', top:'上', bottom:'下'};
+  // 卜主性別+婚姻狀態 → ②③位置代表角色（書本第 8 章 P171 範例 + 系統 v2.0 規則）
+  // 男未婚：②姊妹/女友 ③兄弟｜男已婚：②妻子 ③兄弟（兄弟不變）
+  // 女未婚：②姊妹 ③兄弟/男友｜女已婚：②兄弟姊妹 ③丈夫（姊妹不變）
+  const gender = querentCtx?.gender || '';
+  const married = querentCtx?.married === 'yes';
+  const roleByPos = (() => {
+    const r = {top:'長輩(父母/上司)', bottom:'晚輩(子女/下屬)'};
+    if (gender === 'male') {
+      r.left  = married ? '妻子/女性平輩' : '姊妹/女友/女性平輩';
+      r.right = '兄弟/男性平輩';
+    } else if (gender === 'female') {
+      r.left  = married ? '兄弟姊妹/女性平輩' : '姊妹/女性平輩';
+      r.right = married ? '丈夫/男性平輩'     : '兄弟/男友/男性平輩';
+    } else {
+      r.left  = '左方人物（女平輩）';
+      r.right = '右方人物（男平輩）';
+    }
+    return r;
+  })();
+  const POS_LABEL = {center:'中央', left:`左(${roleByPos.left})`, right:`右(${roleByPos.right})`, top:`上(${roleByPos.top})`, bottom:`下(${roleByPos.bottom})`};
   const myColor = c.color;
 
   const sameColor = ['left','right','top','bottom']
@@ -3571,6 +3615,10 @@ function renderNatalAnalysis() {
     return;
   }
 
+  // 讀取卜主性別＋婚姻狀態（影響②③位置代表角色 + 女命盤離婚格判定）
+  const natalGender = document.getElementById('natal-querent-gender')?.value || '';
+  const natalMarried = document.getElementById('natal-querent-married')?.value || '';
+
   // 先行計算「總格」的避掉條件（書版 H 條：總格有象相、總格自己包炮馬傌可吃別人、總格自己棋可吃不同色象相）
   const totalLayer = getLayerBoard(1);
   let totalHasXiang = false, totalSelfPaoMaCanEat = false, totalSelfCanEatXiang = false;
@@ -3611,7 +3659,9 @@ function renderNatalAnalysis() {
       layerNum: layer.idx,
       ageStart: ageR.start,
       ageEnd: ageR.end,
-      totalHasXiang, totalSelfPaoMaCanEat, totalSelfCanEatXiang
+      totalHasXiang, totalSelfPaoMaCanEat, totalSelfCanEatXiang,
+      gender: natalGender,
+      married: natalMarried
     };
     const patterns = detectPatterns(lb, context);
     const scoreInfo = computeScores(lb);
@@ -3652,7 +3702,7 @@ function renderNatalAnalysis() {
 
     // 詳細版批命盤解說（書版 P170 — 命盤解說：詳細版）
     const prevLb = layer.idx > 1 ? getLayerBoard(layer.idx - 1) : null;
-    html += buildDetailedNarrative(layer, lb, prevLb, patterns, scoreInfo, fiveInfo);
+    html += buildDetailedNarrative(layer, lb, prevLb, patterns, scoreInfo, fiveInfo, {gender:natalGender, married:natalMarried});
 
     html += `</div>`;
   }
@@ -3696,6 +3746,12 @@ function setupNatal() {
     }
     setTimeout(() => exportPDF('natal'), 100);
   };
+  // 卜主性別/婚姻狀態變更 → 已有分析時重新渲染（影響②③位置代表角色與離婚格判定）
+  const reanalyzeIfHasBoard = () => {
+    if (natalBoard.filter(x => x).length > 0) renderNatalAnalysis();
+  };
+  document.getElementById('natal-querent-gender')?.addEventListener('change', reanalyzeIfHasBoard);
+  document.getElementById('natal-querent-married')?.addEventListener('change', reanalyzeIfHasBoard);
 }
 
 /* ===== 前世因果 ===== */
