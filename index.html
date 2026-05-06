@@ -1824,7 +1824,7 @@ function buildQuestionAnswer(b, patterns, scoreInfo, fiveInfo, qType, qText) {
         verdictText = '互相欣賞格 → 雙方有合作空間、有共識，生意可成。';
       } else if (hasFriendPair) {
         verdictBadge = '<span class="badge badge-good">可成</span>';
-        verdictText = '好朋友格 → 有合作機會，但需閒花補（顯化或溝通）。';
+        verdictText = '好朋友格 → 有合作機會，但需補顯化（透過顯化或溝通把資料庫補起來）。';
       } else if (centerEatsAny && netPositive) {
         verdictBadge = '<span class="badge badge-good">有利</span>';
         verdictText = `主動權在你 + 收穫 +${scoreInfo.net} 分 → 對方會接受你的條件。`;
@@ -1940,7 +1940,7 @@ function buildQuestionAnswer(b, patterns, scoreInfo, fiveInfo, qType, qText) {
       // 錄取/考試卦
       if (hasFriendPair) {
         verdictBadge = '<span class="badge badge-good">有機會</span>';
-        verdictText = '好朋友格 → 有錄取機會，但要閒花補（顯化加強）。';
+        verdictText = '好朋友格 → 有錄取機會，但要補顯化（持續做顯化加強動能）。';
       } else if (centerEatsAny) {
         verdictBadge = '<span class="badge badge-good">主動錄取</span>';
         verdictText = '中央能吃別人 → 主動錄取（正取）。';
