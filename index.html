@@ -663,6 +663,7 @@
     body.print-single #panel-single,
     body.print-natal #panel-natal,
     body.print-pastlife #panel-pastlife,
+    body.print-lingshu #panel-lingshu,
     body.print-reference #panel-reference { display: block !important; }
 
     /* 單卦列印：保留盤面 + 問事欄位 + 分析 */
@@ -696,6 +697,7 @@
     <button class="tab active" data-tab="single">單卦（5 子）</button>
     <button class="tab" data-tab="natal">命盤（32 子）</button>
     <button class="tab" data-tab="pastlife">前世因果</button>
+    <button class="tab" data-tab="lingshu">生命靈數</button>
     <button class="tab" data-tab="reference">速查表</button>
   </div>
 
@@ -879,6 +881,47 @@
       </div>
       <div class="analysis" id="analysis-pl">
         <div class="empty-msg">請放上 5 支棋。第一支（中宮）決定前世性別與身分。</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 生命靈數（後天五行＋九星五行）-->
+  <div class="panel" id="panel-lingshu">
+    <div class="help">
+      <b>生命靈數・後天五行・九星五行：</b>輸入西元出生年月日，系統依「三者之合」算出靈數，對應後天五行與九星五行（坎/坤/震/巽/乾/兌/艮/離），自動產出個性、健康、開運顏色、五行生克分析。
+      <br><b>計算規則</b>：把生日所有數字疊加 → 一直加到單位數（1-9）= 靈數。例：1983/04/04 → 1+9+8+3+0+4+0+4=29 → 2+9=11 → 1+1=2（土）。
+      <br><b>學習源</b>：書本《生命靈數開運密碼・九星 X 五行》第 1-4 頁後天五行 + 九星五行 PDF 8 頁。
+    </div>
+    <div class="layout">
+      <div>
+        <div class="board-card">
+          <div class="board-title">生命靈數計算</div>
+          <div style="padding:14px;">
+            <div style="margin-bottom:14px;">
+              <label style="display:block;margin-bottom:6px;font-weight:600;color:#555;">姓名（選填）：</label>
+              <input type="text" id="lingshu-name" placeholder="例：謝佑祥" style="width:100%;padding:10px;border:1px solid #d4b896;border-radius:6px;font-size:15px;font-family:inherit;">
+            </div>
+            <div style="margin-bottom:14px;">
+              <label style="display:block;margin-bottom:6px;font-weight:600;color:#555;">西元出生年月日：</label>
+              <div style="display:flex;gap:8px;">
+                <input type="number" id="lingshu-year" placeholder="1983" min="1900" max="2100" style="flex:2;padding:10px;border:1px solid #d4b896;border-radius:6px;font-size:15px;font-family:inherit;">
+                <input type="number" id="lingshu-month" placeholder="4" min="1" max="12" style="flex:1;padding:10px;border:1px solid #d4b896;border-radius:6px;font-size:15px;font-family:inherit;">
+                <input type="number" id="lingshu-day" placeholder="4" min="1" max="31" style="flex:1;padding:10px;border:1px solid #d4b896;border-radius:6px;font-size:15px;font-family:inherit;">
+              </div>
+              <div style="font-size:12px;color:#888;margin-top:6px;">年（4 位數）／月（1-12）／日（1-31）</div>
+            </div>
+            <div class="picker-actions">
+              <button class="btn btn-primary" id="btn-calc-lingshu">📊 計算生命靈數</button>
+              <button class="btn btn-secondary" id="btn-clear-lingshu">清空</button>
+            </div>
+            <div style="margin-top:14px;padding:10px 12px;background:#fff8f0;border-left:3px solid #d4a574;border-radius:4px;font-size:12.5px;color:#6b3410;line-height:1.6;">
+              💡 <b>先天五行</b>=【命】：與生俱來的稟賦。<b>後天五行</b>=【運】：透過風水、中醫、命理等調整以達趨吉避凶。本系統算的是<b>後天五行</b>。
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="analysis" id="analysis-lingshu">
+        <div class="empty-msg">請輸入西元出生年月日，按「📊 計算生命靈數」即可分析。</div>
       </div>
     </div>
   </div>
@@ -4640,6 +4683,31 @@ function renderReference() {
       <b>📿 觸發後</b>：書版說「卦象只是讓我們看到意識資料庫裡有這樣的資料」 — 觸發≠必然發生，必須做完整療癒淨化（咒輪紙+下定義+交託+噴瓶+火化）清理該年紀的劇情。命盤頁會自動產出「⚠️ 生死關警示專區」明確列出年紀+原因+避過條件。</div>
   </div>`;
 
+  // 書版 v2.8 — 生命靈數＋後天五行＋九星五行對照表
+  html += `<div class="section"><div class="section-title">生命靈數・後天五行・九星五行對照表（書版 v2.8 — 《生命靈數開運密碼・九星 X 五行》）</div>
+    <div class="item">📌 <b>計算規則</b>：把西元出生年月日的所有數字疊加，反覆相加直到單位數（1-9）= 靈數。<br>例：1983/04/04 → 1+9+8+3+0+4+0+4 = 29 → 2+9 = 11 → 1+1 = 2（土）。</div>
+    <div class="item">📌 <b>先天五行 vs 後天五行</b>：先天=【命】（與生俱來的稟賦），後天=【運】。透過風水、中醫、命理（能量礦石、開運顏色）等可調整後天五行，達到趨吉避凶的作用。本系統算的是<b>後天五行</b>。</div>
+    <div class="item">📌 <b>1-9 對照速查</b>（五行・八卦・自然・九星・五德・個性類型）：<br>
+      <b>1【水】</b> 坎・水・海王星《智》智慧型｜健康注意：腎、膀胱、婦科、骨、耳<br>
+      <b>2【土】</b> 坤・地・土星《信》保守型｜健康注意：脾胃、支氣管、大腸、消化系統<br>
+      <b>3【木】</b> 震・雷・木星《仁》機動型｜健康注意：肝膽、心血管、手足關節、神經<br>
+      <b>4【木】</b> 巽・風・水星《仁》隨型｜健康注意：肝、神經、呼吸、手足<br>
+      <b>5【土】</b> 中宮・土・中宮土《信》中宮型｜健康注意：消化、脾胃、整體免疫<br>
+      <b>6【金】</b> 乾・天・天王星《義》正直型｜健康注意：呼吸、血液循環、支氣管、大腸<br>
+      <b>7【金】</b> 兌・澤・金星《義》浪漫型｜健康注意：濕氣、肺、骨骼、大腸、腎<br>
+      <b>8【土】</b> 艮・山・冥王星《信》內斂型｜健康注意：神經、消化系統<br>
+      <b>9【火】</b> 離・火・火星《禮》敏捷型｜健康注意：心臟、血液、眼睛、小腸</div>
+    <div class="item good">📌 <b>開運顏色（隨身物品＋床單被套＋能量礦石）</b>：<br>
+      <b>1 水</b>：◎最佳 白/銀/金 ｜其次 黑/深藍/綠/藍 ｜✗黃/棕/紅/紫<br>
+      <b>2 土</b>：◎最佳 紅/紫 ｜其次 黃/棕/白/銀 ｜✗綠/藍/黑/深藍<br>
+      <b>3-4 木</b>：◎最佳 黑/深藍 ｜其次 綠/藍/紅/紫 ｜✗白/銀/黃/棕<br>
+      <b>5 土</b>：◎最佳 紅/紫 ｜其次 黃/棕/白/銀 ｜✗綠/藍/黑<br>
+      <b>6-7 金</b>：◎最佳 黃/棕 ｜其次 白/銀/黑/深藍 ｜✗紅/紫/綠/藍<br>
+      <b>8 土</b>：◎最佳 紅/紫 ｜其次 黃/棕/白/銀 ｜✗綠/藍/黑<br>
+      <b>9 火</b>：◎最佳 綠/藍 ｜其次 紅/紫/黃/棕 ｜✗黑/深藍/白/銀</div>
+    <div class="item">📌 <b>五行生克</b>：金生水、水生木、木生火、火生土、土生金（生＝補）；金克木、木克土、土克水、水克火、火克金（克＝傷）。能量不足→補生我者；能量過剛→洩我生者；長期避免接觸克我者。</div>
+  </div>`;
+
   // 書版 v2.0 — 問事 5 規則
   html += `<div class="section"><div class="section-title">問事 5 規則（書版 v2.6）</div>
     <div class="item warn">📌 <b>規則一：命盤限本人抓棋，問事單卦只能問自己或直系血親</b><br>例外：卦主不便時可說「允許某某代我抓棋」（僅限問事單卦，年運/命盤不可）</div>
@@ -4820,6 +4888,222 @@ function exportPDF(mode) {
   }, 3000);
 }
 
+/* ===== 生命靈數＋後天五行＋九星五行 =====
+   學習源：書本《生命靈數開運密碼・九星 X 五行》第 1-4 頁後天五行 + 九星五行 PDF 8 頁
+   計算規則：把出生年月日所有數字疊加 → 反覆相加到單位數（1-9）= 靈數
+   1-9 對應：水/土/木/木/中宮土/金/金/土/火 + 八卦 + 九星 + 五德
+*/
+const LINGSHU_DATA = {
+  1: { element:'水', bagua:'坎', symbol:'水', star:'海王星', virtue:'智',
+       type:'智慧型',
+       persona:'有許多善巧聰明，會比較欣賞有才華的人。相親魅力，有很大的包容性、待人處事就像水一般。面對壓力，能夠自己找到解決事情的方式、冷靜化解。內在常有一些恐懼擔憂，容易隱藏自己的真正感受。',
+       health:'腎臟、膀胱、婦科、攝護腺、骨、耳朵方面的疾病',
+       best:['白色','銀色','淺灰色','金色'],
+       second:['黑色','深灰色','極深藍','綠色系','藍色系'],
+       avoid:['黃色系','棕色系','紅色系','紫色系'] },
+  2: { element:'土', bagua:'坤', symbol:'地', star:'土星', virtue:'信',
+       type:'保守型',
+       persona:'很有母愛，會比較容易想很多。個性溫和、親切、柔順、體貼、細心、有耐性、不計較。喜歡穩定與保守的人際關係，善體人意、喜歡照顧別人。總是習慣無怨無悔、任勞任怨的付出。只要是答應別人的事，都會盡全力去做到，不喜歡不守信用的人。',
+       health:'脾胃、支氣管、大腸方面的疾病；消化系統與呼吸系統易留心',
+       best:['紅色系','紫色系'],
+       second:['黃色系','棕色系','白色','銀色','淺灰色'],
+       avoid:['綠色系','藍色系','黑色','深灰色','極深藍'] },
+  3: { element:'木', bagua:'震', symbol:'雷', star:'木星', virtue:'仁',
+       type:'機動型',
+       persona:'積極進取、急性子、好奇心、求知欲強。屬機動性的個性，不喜歡拐彎抹角、好惡分明，情緒起伏較大。不喜歡擔任首領的條件，但對自己的表現相當在意，會問了面子去盡力完成答應的事，算是言出必行的實踐者。是直線條、單一思考的人，太老實又不懂得耍一點善意的說話技巧，心急性急，有口無心。',
+       health:'肝膽、心血管、手足關節、神經系統方面的疾病',
+       best:['黑色','深灰色','極深藍'],
+       second:['綠色系','藍色系','紅色系','紫色系'],
+       avoid:['白色','銀色','淺灰色','黃色系','棕色系'] },
+  4: { element:'木', bagua:'巽', symbol:'風', star:'水星', virtue:'仁',
+       type:'隨型',
+       persona:'適應力好，內心柔和、仁慈、有親和力。具有卓越的邏輯分析技巧、洞察能力與深入的分析精神。靈巧多變，口才不錯，會隨著對象、環境、時間而調整與人的應對，頗擅長人際關係。善於解決問題，是眾人眼光的焦點。在人群中容易冒出頭，加上好聖心強，注重面子問題，所以人情壓力排名第一，心很軟，要盡量避免做一個濫好人，才能避免答應太多而做不到。',
+       health:'肝臟、神經、呼吸系統、手足、神經系統方面的疾病',
+       best:['黑色','深灰色','極深藍'],
+       second:['綠色系','藍色系','紅色系','紫色系'],
+       avoid:['白色','銀色','淺灰色','黃色系','棕色系'] },
+  5: { element:'土', bagua:'中宮', symbol:'土（中央）', star:'中宮土', virtue:'信',
+       type:'中宮型',
+       persona:'5 為中宮，居中協調的個性，集八方氣場於一身，個性兼具其他八數特質。中宮土屬於後天五行的核心位置，需特別注意能量的平衡與外溢。',
+       health:'消化系統、脾胃、整體免疫力',
+       best:['紅色系','紫色系'],
+       second:['黃色系','棕色系','白色','銀色'],
+       avoid:['綠色系','藍色系','黑色','深灰色','極深藍'] },
+  6: { element:'金', bagua:'乾', symbol:'天', star:'天王星', virtue:'義',
+       type:'正直型',
+       persona:'不喜歡阿諛、奉承、諂媚，屬實力派，以工作取勝的人。心思聰明、有先見之明、處世成熟。重義氣，有顆熱忱的心，是個標準的大善人，具有能上善下的氣質。是屬天～君主的格局，一旦說出口的承諾，如同「君無戲言」，很少會讓自己有做不到的時候，朋友對您也是很信任。',
+       health:'呼吸系統、血液循環方面的毛病；支氣管、大腸、腎臟、婦科、攝護腺也要留心',
+       best:['黃色系','棕色系'],
+       second:['白色','銀色','淺灰色','黑色','深灰色','極深藍'],
+       avoid:['紅色系','紫色系','綠色系','藍色系'] },
+  7: { element:'金', bagua:'兌', symbol:'澤', star:'金星', virtue:'義',
+       type:'浪漫型',
+       persona:'思想自然率真、口才伶俐、重義氣。有很好的人緣與說服力。不喜歡呆板單一的生活與工作。較喜歡追求浪漫、優雅、活潑、多彩的生活。財運佳，但大多要到中年，財運才能穩固。年輕時通常需較辛苦、接受磨練。',
+       health:'身體濕氣重、肺部、骨骼、大腸、腎臟、婦科、攝護腺、骨、耳朵方面的疾病',
+       best:['黃色系','棕色系'],
+       second:['白色','銀色','淺灰色','黑色','深灰色','極深藍'],
+       avoid:['紅色系','紫色系','綠色系','藍色系'] },
+  8: { element:'土', bagua:'艮', symbol:'山', star:'冥王星', virtue:'信',
+       type:'內斂型',
+       persona:'外柔內剛、待人柔和、堅持自己的信念行事。個性上有一定程度的擇善固執，做人做事的道理比較多、討厭人不守信用。服務熱誠，會用實際的關心、體貼的動作待人。不善於表達內心的情感，內心如火的熱情，需要鼓勵和激發，才會表露出來。',
+       health:'神經系統與消化系統方面的疾病',
+       best:['紅色系','紫色系'],
+       second:['黃色系','棕色系','白色','銀色','淺灰色'],
+       avoid:['綠色系','藍色系','黑色','深灰色','極深藍'] },
+  9: { element:'火', bagua:'離', symbol:'火', star:'火星', virtue:'禮',
+       type:'敏捷型',
+       persona:'個性熱情如火，先天有著積極的熱情因子。行動力強，遇事斷然處之，積極又敢挑戰，是事業的急先鋒，辦事迅速解決效率良好。但做事有時固執又沒計劃性，常是憑一時的熱忱。若能在事前有周詳縝密的計劃，而非只憑一時的熱誠，就能有大成就。有願意付出心力照顧、關心他人的個性，對親近的朋友與家人往往特別累積了相當多的良好人脈資源。討厭被人潑冷水。',
+       health:'心臟、血液、眼睛、小腸方面的疾病',
+       best:['綠色系','藍色系'],
+       second:['紅色系','紫色系','黃色系','棕色系'],
+       avoid:['黑色','深灰色','極深藍','白色','銀色','淺灰色'] }
+};
+
+// 五行生克
+const FIVE_GENERATE      = { '木':'火','火':'土','土':'金','金':'水','水':'木' }; // 我生（洩）
+const FIVE_GENERATED_BY  = { '木':'水','火':'木','土':'火','金':'土','水':'金' }; // 生我（補）
+const FIVE_OVERCOME      = { '木':'土','火':'金','土':'水','金':'木','水':'火' }; // 我克（耗）
+const FIVE_OVERCOME_BY   = { '木':'金','火':'水','土':'木','金':'火','水':'土' }; // 克我（傷）
+
+// 計算靈數：把日期所有數字反覆相加直到單位數
+function calcLingshu(year, month, day) {
+  const digits = `${year}${String(month).padStart(2,'0')}${String(day).padStart(2,'0')}`.split('').map(Number);
+  const sum0 = digits.reduce((a,b)=>a+b, 0);
+  const steps = [{stage:'初始相加', value:digits.join('+'), sum:sum0}];
+  let n = sum0;
+  while (n >= 10) {
+    const ds = String(n).split('').map(Number);
+    const next = ds.reduce((a,b)=>a+b, 0);
+    steps.push({stage:'再相加', value:ds.join('+'), sum:next});
+    n = next;
+  }
+  return { lingshu:n, steps, sum0 };
+}
+
+function setupLingshu() {
+  const btnCalc = document.getElementById('btn-calc-lingshu');
+  const btnClear = document.getElementById('btn-clear-lingshu');
+  if (!btnCalc || !btnClear) return;
+  btnCalc.onclick = () => analyzeLingshu();
+  btnClear.onclick = () => {
+    document.getElementById('lingshu-name').value = '';
+    document.getElementById('lingshu-year').value = '';
+    document.getElementById('lingshu-month').value = '';
+    document.getElementById('lingshu-day').value = '';
+    document.getElementById('analysis-lingshu').innerHTML = '<div class="empty-msg">請輸入西元出生年月日，按「📊 計算生命靈數」即可分析。</div>';
+  };
+  ['lingshu-year','lingshu-month','lingshu-day','lingshu-name'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('keypress', e => { if (e.key === 'Enter') analyzeLingshu(); });
+  });
+}
+
+function renderLingshuColorRow(label, colors, accent, bg) {
+  return `<div style="margin:8px 0;padding:8px 12px;background:${bg};border-left:3px solid ${accent};border-radius:4px;font-size:13.5px;line-height:1.7;color:#333;"><b>${label}：</b>${colors.join('、')}</div>`;
+}
+
+function analyzeLingshu() {
+  const name = (document.getElementById('lingshu-name').value || '').trim();
+  const year = parseInt(document.getElementById('lingshu-year').value);
+  const month = parseInt(document.getElementById('lingshu-month').value);
+  const day = parseInt(document.getElementById('lingshu-day').value);
+  const target = document.getElementById('analysis-lingshu');
+
+  if (!year || year < 1900 || year > 2100) { target.innerHTML = '<div class="empty-msg" style="color:#c0392b;">⚠ 請輸入有效的西元出生年（1900-2100）。</div>'; return; }
+  if (!month || month < 1 || month > 12) { target.innerHTML = '<div class="empty-msg" style="color:#c0392b;">⚠ 請輸入有效的月份（1-12）。</div>'; return; }
+  if (!day || day < 1 || day > 31) { target.innerHTML = '<div class="empty-msg" style="color:#c0392b;">⚠ 請輸入有效的日（1-31）。</div>'; return; }
+
+  const result = calcLingshu(year, month, day);
+  const data = LINGSHU_DATA[result.lingshu];
+  const subj = name || '您';
+  const me = data.element;
+  const generates = FIVE_GENERATE[me];
+  const generatedBy = FIVE_GENERATED_BY[me];
+  const overcomes = FIVE_OVERCOME[me];
+  const overcomeBy = FIVE_OVERCOME_BY[me];
+
+  let html = '';
+
+  // 結果摘要
+  html += `<div class="layer-card" style="border-left-color:#9b59b6;background:linear-gradient(to right,#faf3fb,#f3e8f5);">`;
+  html += `<div class="layer-title" style="color:#7d3c98;font-size:18px;">🔮 ${subj}的生命靈數結果</div>`;
+  html += `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin:12px 0;">`;
+  html += `<div style="background:#fff;padding:10px;border-radius:6px;border-left:3px solid #9b59b6;text-align:center;"><div style="font-size:11px;color:#888;">出生</div><div style="font-size:14px;font-weight:600;color:#333;">${year}/${String(month).padStart(2,'0')}/${String(day).padStart(2,'0')}</div></div>`;
+  html += `<div style="background:#fff;padding:10px;border-radius:6px;border-left:3px solid #c0392b;text-align:center;"><div style="font-size:11px;color:#888;">三者之合（靈數）</div><div style="font-size:24px;font-weight:700;color:#c0392b;">${result.lingshu}</div></div>`;
+  html += `<div style="background:#fff;padding:10px;border-radius:6px;border-left:3px solid #d4a574;text-align:center;"><div style="font-size:11px;color:#888;">後天五行</div><div style="font-size:24px;font-weight:700;color:#8b4513;">${data.element}</div></div>`;
+  html += `<div style="background:#fff;padding:10px;border-radius:6px;border-left:3px solid #5b8c3e;text-align:center;"><div style="font-size:11px;color:#888;">八卦・自然</div><div style="font-size:14px;font-weight:600;color:#333;">${data.bagua}・${data.symbol}</div></div>`;
+  html += `<div style="background:#fff;padding:10px;border-radius:6px;border-left:3px solid #2980b9;text-align:center;"><div style="font-size:11px;color:#888;">九星五行</div><div style="font-size:14px;font-weight:600;color:#333;">${data.star}</div></div>`;
+  html += `<div style="background:#fff;padding:10px;border-radius:6px;border-left:3px solid #e67e22;text-align:center;"><div style="font-size:11px;color:#888;">五德</div><div style="font-size:24px;font-weight:700;color:#e67e22;">《${data.virtue}》</div></div>`;
+  html += `</div>`;
+  // 計算過程
+  html += `<div style="background:#fff;padding:10px 12px;border-radius:5px;font-size:13px;color:#555;line-height:1.8;border:1px dashed #d4a574;">`;
+  html += `<b>計算過程</b>：${year}/${String(month).padStart(2,'0')}/${String(day).padStart(2,'0')} → ${result.steps[0].value} = <b>${result.steps[0].sum}</b>`;
+  for (let i = 1; i < result.steps.length; i++) {
+    html += ` → ${result.steps[i].value} = <b>${result.steps[i].sum}</b>`;
+  }
+  html += ` → 靈數 <b style="color:#c0392b;font-size:16px;">${result.lingshu}</b>（${data.element}・${data.bagua}）`;
+  html += `</div></div>`;
+
+  // 9 宮格示意圖
+  html += `<div class="layer-card"><div class="layer-title">📊 1-9 宮格示意（紅框＝您所在位置）</div>`;
+  html += `<div style="display:grid;grid-template-columns:repeat(3,80px);grid-gap:6px;justify-content:center;margin:14px auto;max-width:280px;">`;
+  for (let i = 1; i <= 9; i++) {
+    const isMe = (i === result.lingshu);
+    const cellData = LINGSHU_DATA[i];
+    html += `<div style="background:${isMe?'#fef0eb':'#f9f5ee'};border:${isMe?'3px':'1px'} solid ${isMe?'#c0392b':'#d4b896'};border-radius:6px;padding:8px 4px;text-align:center;${isMe?'box-shadow:0 2px 6px rgba(192,57,43,0.2);':''}">`;
+    html += `<div style="font-size:24px;font-weight:700;color:${isMe?'#c0392b':'#8b4513'};">${i}</div>`;
+    html += `<div style="font-size:11px;color:#666;line-height:1.3;">${cellData.element}・${cellData.bagua}</div>`;
+    html += `<div style="font-size:10px;color:#888;">《${cellData.virtue}》</div>`;
+    html += `</div>`;
+  }
+  html += `</div></div>`;
+
+  // 個性與表現
+  html += `<div class="layer-card" style="border-left-color:#5b8c3e;">`;
+  html += `<div class="layer-title">🌱 ${subj}的後天五行：屬${result.lingshu}【${data.element}】《${data.virtue}》</div>`;
+  html += `<div style="background:#fff8f0;padding:10px 12px;border-radius:5px;margin:10px 0;font-size:13.5px;line-height:1.8;color:#555;border-left:3px solid #d4a574;">`;
+  html += `<b>《${data.type}》的個性：</b>${data.persona}`;
+  html += `</div></div>`;
+
+  // 健康提醒
+  html += `<div class="layer-card" style="border-left-color:#c0392b;background:linear-gradient(to right,#fff8f5,#fef0eb);">`;
+  html += `<div class="layer-title" style="color:#c0392b;">💊 健康提醒</div>`;
+  html += `<div style="background:#fff;padding:10px 12px;border-radius:5px;font-size:13.5px;line-height:1.7;color:#8b3a1a;border-left:3px solid #c0392b;">`;
+  html += `※ ${subj}健康上要注意：<b>${data.health}</b>`;
+  html += `</div></div>`;
+
+  // 開運顏色
+  html += `<div class="layer-card" style="border-left-color:#d4a574;background:#fffbf3;">`;
+  html += `<div class="layer-title" style="color:#8b4513;">🎨 開運顏色（床單被套與隨身物品／能量礦石）</div>`;
+  html += renderLingshuColorRow('◎ 最佳的顏色', data.best, '#27ae60', '#f0f9f0');
+  html += renderLingshuColorRow('◎ 其次的顏色', data.second, '#2980b9', '#e8f4f9');
+  html += renderLingshuColorRow('※ 不適合的顏色', data.avoid, '#c0392b', '#fdecea');
+  html += `</div>`;
+
+  // 五行生克分析
+  html += `<div class="layer-card" style="border-left-color:#2980b9;">`;
+  html += `<div class="layer-title">☯ 五行生克分析（${subj}屬${data.element}）</div>`;
+  html += `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px;margin:10px 0;">`;
+  html += `<div style="background:#f0f9f0;padding:10px;border-radius:5px;border-left:3px solid #27ae60;font-size:13px;line-height:1.6;"><b style="color:#1e6e3a;">生我者（補）：${generatedBy}</b><br>${generatedBy} 生 ${data.element}，${generatedBy} 是您的<b>母親五行</b>，補您的能量。</div>`;
+  html += `<div style="background:#fef9f0;padding:10px;border-radius:5px;border-left:3px solid #d4a574;font-size:13px;line-height:1.6;"><b style="color:#8b4513;">同我者（旺）：${data.element}</b><br>相同五行為「比和」，能量同向加強。</div>`;
+  html += `<div style="background:#fef9f5;padding:10px;border-radius:5px;border-left:3px solid #e67e22;font-size:13px;line-height:1.6;"><b style="color:#a85814;">我生者（洩）：${generates}</b><br>${data.element} 生 ${generates}，您的能量會流向 ${generates}，過多會洩氣。</div>`;
+  html += `<div style="background:#f5f5fa;padding:10px;border-radius:5px;border-left:3px solid #8e44ad;font-size:13px;line-height:1.6;"><b style="color:#6c3483;">我克者（耗）：${overcomes}</b><br>${data.element} 克 ${overcomes}，您能制約 ${overcomes}，但需耗能。</div>`;
+  html += `<div style="background:#fdecea;padding:10px;border-radius:5px;border-left:3px solid #c0392b;font-size:13px;line-height:1.6;"><b style="color:#922b1c;">克我者（傷）：${overcomeBy}</b><br>${overcomeBy} 克 ${data.element}，${overcomeBy} 會壓制您，需避免。</div>`;
+  html += `</div></div>`;
+
+  // 整體建議
+  html += `<div class="layer-card" style="border-left-color:#7d3c98;background:#faf3fb;">`;
+  html += `<div class="layer-title" style="color:#7d3c98;">🌟 整體建議</div>`;
+  html += `<div style="background:#fff;padding:10px 12px;border-radius:5px;font-size:13.5px;line-height:1.8;color:#555;">`;
+  html += `<b>1. 先天五行 vs 後天五行：</b>先天五行是【命】（與生俱來的稟賦），後天五行是【運】。透過風水（家中顏色配置）、中醫（飲食調理）、命理（能量礦石、開運物品）等可調整後天五行，以達趨吉避凶的作用。<br><br>`;
+  html += `<b>2. 隨身物品建議：</b>戴上「最佳顏色」系的能量礦石，避免「不適合顏色」系的物品。床單被套也以最佳顏色為主。<br><br>`;
+  html += `<b>3. 五行能量平衡：</b>當您能量不足時，多接觸「生我者（${generatedBy}）」的元素；當您能量過剛時，可透過「我生者（${generates}）」洩出；避免長期接觸「克我者（${overcomeBy}）」的元素。<br><br>`;
+  html += `<b>4. 健康調理：</b>請特別留意 ${data.health}，可透過中醫調理或日常保養加強。`;
+  html += `</div></div>`;
+
+  target.innerHTML = html;
+}
+
 /* ===== Tab 切換 ===== */
 function setupTabs() {
   document.querySelectorAll('.tab').forEach(tab => {
@@ -4838,6 +5122,7 @@ window.addEventListener('DOMContentLoaded', () => {
   setupSingle();
   setupNatal();
   setupPastLife();
+  setupLingshu();
   renderReference();
   renderBoard('board-single', board);
   renderBoard('board-pastlife', plBoard);
