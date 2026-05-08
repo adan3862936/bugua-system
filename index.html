@@ -435,6 +435,111 @@
     white-space: nowrap;
   }
 
+  /* 生死關警示專區（書版 P31-P32 + IMG_0819 學習） */
+  .death-pass-warning {
+    border-left-color: #c0392b !important;
+    background: linear-gradient(to right, #fff8f5, #fef0eb) !important;
+  }
+  .death-pass-warning .dp-title {
+    color: #c0392b;
+    font-weight: 700;
+    font-size: 17px;
+  }
+  .death-pass-warning .dp-summary {
+    background: #fff;
+    border-left: 3px solid #c0392b;
+    padding: 8px 12px;
+    margin: 8px 0;
+    font-size: 13.5px;
+    line-height: 1.65;
+    border-radius: 4px;
+  }
+  .death-pass-warning .dp-summary .dp-sub {
+    color: #888;
+    font-size: 12px;
+    display: block;
+    margin-top: 4px;
+  }
+  .death-pass-warning .dp-card {
+    background: #fff;
+    border-left: 4px solid #e67e22;
+    padding: 12px 14px;
+    margin: 10px 0;
+    border-radius: 5px;
+    box-shadow: 0 1px 3px rgba(192,57,43,0.08);
+  }
+  .death-pass-warning .dp-card.dp-possible {
+    border-left-color: #f39c12;
+  }
+  .death-pass-warning .dp-age {
+    font-weight: 700;
+    color: #c0392b;
+    font-size: 16px;
+    margin-bottom: 8px;
+    border-bottom: 1px dashed #f0c0b0;
+    padding-bottom: 6px;
+  }
+  .death-pass-warning .dp-section {
+    margin: 6px 0;
+    font-size: 13.5px;
+    line-height: 1.65;
+  }
+  .death-pass-warning .dp-section b {
+    color: #c0392b;
+  }
+  .death-pass-warning .dp-trigger-line {
+    background: #fef9f5;
+    padding: 6px 10px;
+    border-radius: 3px;
+    margin: 4px 0;
+    font-size: 13px;
+  }
+  .death-pass-warning .dp-cause {
+    background: #fdf2ec;
+    padding: 6px 10px;
+    border-radius: 3px;
+    color: #8b3a1a;
+    font-size: 13px;
+  }
+  .death-pass-warning .dp-escape {
+    background: #f0f9f0;
+    border-left: 3px solid #27ae60;
+    padding: 6px 10px;
+    border-radius: 3px;
+    color: #1e6e3a;
+    font-size: 13px;
+    margin: 6px 0;
+  }
+  .death-pass-warning .dp-noescape {
+    background: #fdecea;
+    border-left: 3px solid #c0392b;
+    padding: 6px 10px;
+    border-radius: 3px;
+    color: #c0392b;
+    font-weight: 600;
+    font-size: 13px;
+    margin: 6px 0;
+  }
+  .death-pass-warning .dp-cta {
+    background: #fffbf3;
+    border-left: 3px solid #d4a574;
+    padding: 8px 12px;
+    border-radius: 3px;
+    margin-top: 12px;
+    color: #8b4513;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  .death-pass-warning .dp-none {
+    background: #f0f9f0;
+    border-left: 3px solid #27ae60;
+    padding: 10px 14px;
+    border-radius: 5px;
+    color: #1e6e3a;
+    font-size: 14px;
+    line-height: 1.65;
+  }
+
   /* 顯化淨化建議（咒輪紙內容 + 念誦內容） */
   .purification-card { border-left-color: #d4a574 !important; background: #fffbf3; }
   .purification-card .purif-title { color: #8b4513; font-weight:700; font-size:16px; }
@@ -3731,6 +3836,134 @@ function buildMingeTable(layerData) {
   return html;
 }
 
+/* ===== 生死關警示專區（書版 P31-P32 + IMG_0819 學習） =====
+   整合命盤各十年運局（2-8 局）的生死關判定，明確列出：
+   - 觸發年紀區間（例如 41-50 歲）
+   - 觸發類型（A 一般／B 50後／C 70後／D 81後／E 陰陽異常）+ 完整原因
+   - 死因器官（被吃中央棋對應）+ 死因方式（被誰吃對應）
+   - 避過條件（H1/H2/H3/H4）+ 機率說明
+   書版範圍硬擋：總格（1-10／81-90 歲）一律不判生死關。
+   未觸發 → 顯示「✓ 各十年運局未觸發生死關」綠色提示。
+*/
+function buildDeathPassWarning(allLayersData) {
+  const TRIGGER_LABEL = {
+    'A': 'A 一般原則',
+    'B': 'B 50 歲後特例',
+    'C': 'C 70 歲後特例',
+    'D': 'D 81 歲後特殊判定',
+    'D-friend': 'D 衍生（81 歲後好朋友格被吃）',
+    'D-regret': 'D 衍生（81 歲後悔恨格構成）',
+    'E': 'E 陰陽異常（可能性）'
+  };
+  const TRIGGER_DETAIL = {
+    'A': '中央無法反吃外圍 + 至少一支可吃中央且無保護',
+    'B': '別色將/帥可吃中央 + 同盤有暴動格',
+    'C': '同盤出現分離格 → 壽魂想離開的可能',
+    'D': '不論保護，只要中央可被吃即算（中央能反吃 → 不算）',
+    'D-friend': '當局是好朋友格 + 中央可被吃 → 機率大',
+    'D-regret': '當局是悔恨格 + 中央可被吃 → 有機率',
+    'E': '陰陽不協調/悔恨/兵卒消耗/包炮消耗 + 動能不足'
+  };
+  const ESCAPE_LABEL = {
+    'H1': 'H1：30 歲前 + 總格有象/相 → 天助避過',
+    'H2': 'H2：總格自己包/炮/馬/傌 可吃別人 → 神明力量避過',
+    'H3': 'H3：總格自己棋可吃不同色象/相 → 累世修行避過',
+    'H4': 'H4：當局有雨傘格 / 十字天助格 / 中央為象/相 → 有機會避過'
+  };
+
+  // 收集所有生死關觸發
+  const triggered = [];
+  for (const ld of allLayersData) {
+    const dpItems = ld.patterns.filter(p => p.name === '生死關' || p.name === '生死關（可能性）');
+    for (const pt of dpItems) {
+      triggered.push({
+        idx: ld.idx,
+        ageStart: ld.ageStart,
+        ageEnd: ld.ageEnd,
+        layerName: NATAL_LAYERS.find(l => l.idx === ld.idx)?.name || `第${ld.idx}局`,
+        center: ld.lb.center,
+        pattern: pt
+      });
+    }
+  }
+
+  let html = `<div class="layer-card death-pass-warning">`;
+  html += `<div class="dp-title">⚠️ 生死關警示專區（書版 P31-P32 ｜ IMG_0819）</div>`;
+  html += `<div class="dp-summary">書版規定生死關判定僅限<b>命盤十年運（11-80 歲，第 2-8 局）</b>，總格（1-10／81-90 歲）一律不判。<br>` +
+          `<span class="dp-sub">死因器官：仕→呼吸/肺/大腸；相→心血管；馬→意外；炮→腎/婦科；兵→脾胃/免疫；俥→肝膽/行車。死因方式：被將/帥→意外；被士仕→刀關；被車相→心血管；被卒兵→脾胃免疫。</span></div>`;
+
+  if (triggered.length === 0) {
+    html += `<div class="dp-none">✓ 命盤各十年運局（11-80 歲）<b>未觸發生死關</b>。<br>` +
+            `<span style="color:#666;font-size:12px;">系統依書版 P31-P32 完整 5 觸發層（A/B/C/D/E）逐局比對皆未滿足；總格依書版範圍硬擋不判。</span></div>`;
+    html += `</div>`;
+    return html;
+  }
+
+  // 摘要
+  const ageList = triggered.map(t => `${t.ageStart}-${t.ageEnd}歲（${t.layerName}）`).join('、');
+  html += `<div class="dp-summary" style="background:#fef0eb;border-left-color:#c0392b;">` +
+          `命盤共 <b style="color:#c0392b;font-size:15px;">${triggered.length}</b> 個年紀區間觸發生死關：${ageList}。<br>` +
+          `<span class="dp-sub">書版說「卦象只是讓我們看到我們意識資料庫裡有這樣的資料」 — 觸發不等於必然發生，必須做療癒淨化＋資料清理。</span></div>`;
+
+  // 每個觸發區間獨立卡片
+  for (const t of triggered) {
+    const isPossibility = t.pattern.name === '生死關（可能性）';
+    const triggers = t.pattern.triggers || [];
+    const escapes = t.pattern.escapes || [];
+
+    html += `<div class="dp-card${isPossibility ? ' dp-possible' : ''}">`;
+    html += `<div class="dp-age">${isPossibility ? '🟡' : '⚠️'} ${t.ageStart}-${t.ageEnd} 歲（第 ${t.idx} 局・${t.layerName}）${isPossibility ? '【可能性】' : ''}</div>`;
+
+    // 中央棋資訊
+    if (t.center) {
+      html += `<div class="dp-section"><b>中央：</b>${t.center.name}（${t.center.color === 'red' ? '紅' : '黑'}方）</div>`;
+    }
+
+    // 觸發原因（A/B/C/D/E + 細節）
+    if (triggers.length > 0) {
+      html += `<div class="dp-section"><b>觸發原因：</b></div>`;
+      for (const code of triggers) {
+        const label = TRIGGER_LABEL[code] || code;
+        const detail = TRIGGER_DETAIL[code] || '';
+        html += `<div class="dp-trigger-line">▸ <b>${label}</b>${detail ? '：' + detail : ''}</div>`;
+      }
+    }
+
+    // 死因（從 desc 抽取或自行計算）
+    if (t.center && !isPossibility) {
+      const deathCauseByVictim = {
+        shi:'呼吸系統、肺或大腸',
+        xiang:'心血管疾病',
+        ma:'意外',
+        pao:'腎臟或婦科',
+        bing:'脾胃、消化系統、免疫系統',
+        shuai:'重大關卡',
+        che:'肝膽、行車相關'
+      };
+      const cause = deathCauseByVictim[t.center.kind] || '對應器官系統';
+      html += `<div class="dp-section dp-cause">💊 <b>死因器官對應：</b>中央 ${t.center.name} → ${cause}</div>`;
+    }
+
+    // 避過條件（H1-H4）
+    if (escapes.length > 0) {
+      html += `<div class="dp-section"><b>✦ 避過可能性（H 條件，命中越多風險越低）：</b></div>`;
+      for (const code of escapes) {
+        const label = ESCAPE_LABEL[code] || code;
+        html += `<div class="dp-escape">▸ ${label}</div>`;
+      }
+    } else {
+      html += `<div class="dp-noescape">⚠ 此局無避過條件加持（H1-H4 皆未滿足），務必嚴肅看待，建議盡快做完整療癒淨化。</div>`;
+    }
+
+    html += `</div>`;
+  }
+
+  // 統一行動指引
+  html += `<div class="dp-cta">📿 <b>建議行動：</b>下方「顯化淨化建議」區塊已自動依命盤觸發劇情產出對應的療癒淨化操作步驟（咒輪紙文字＋下定義＋交託＋噴瓶念誦＋火化）。書版強調：清理意識資料庫的劇情就有機會改寫人生軌跡。</div>`;
+  html += `</div>`;
+  return html;
+}
+
 /* ===== 顯化淨化建議（書本第 10 章 P22-P29 + 療癒淨化與顯化資料夾 8 張範本學習） =====
    依命盤觸發劇情自動產出：
    1. 咒輪紙內容（多張，依主題分類：總格/學習/情感/事業/運勢逐十年）
@@ -4142,6 +4375,11 @@ function renderNatalAnalysis() {
     html += `</div>`;
   }
 
+  // 生死關警示專區（書版 P31-P32 + IMG_0819）— 整合各局生死關判定，明確列出年紀+原因
+  if (allLayersData.length > 0) {
+    html += buildDeathPassWarning(allLayersData);
+  }
+
   // 命格選單分析總表（書版命格選單對照，學習自命格選單.zip 16 頁）
   if (allLayersData.length > 0) {
     html += buildMingeTable({layers: allLayersData});
@@ -4393,7 +4631,13 @@ function renderReference() {
     <div class="item">📌 <b>㉓ 雨傘格</b>：②③④同色 → 有天助（撐傘看不到天，心情會悶）。命盤最後一局=這輩子是輪迴最後一世</div>
     <div class="item good">📌 <b>㉔ 十字天助格</b>：①②③同色 + ④⑤異色（橫向）<b>或</b> ①④⑤同色 + ②③異色（縱向）→ 純粹十字架形狀，有天助、有老天看顧、時機對了。注意：另外兩支必須跟中央異色，否則就變成雨傘格/眾星拱月/悔恨格</div>
     <div class="item good">📌 <b>㉕ 修行緣分格</b>（命盤）：中央相象+同色傌馬炮包/中央傌馬炮包/有雨傘十字天助 → 跟神明有連結</div>
-    <div class="item warn">📌 <b>㉖ 生死關</b>（書版 P31-P32，僅限命盤十年運局 2-8）：A. 中央無路+無保護+至少一支可吃 ｜B. 50歲後別色將/帥暴動可吃 ｜C. 70歲後出現分離格 ｜D. 81歲後不論保護只要能被吃就算（好朋友/悔恨格機率大）｜E. 陰陽不協調/消耗+包炮動能不足 → 可能性。死因：被吃中央=器官系統；被誰吃=死因方式。避過：總格象相+30歲前/總格自己包炮馬傌可吃別人/總格自己可吃不同色象相/當局雨傘十字天助/中央象相</div>
+    <div class="item warn">📌 <b>㉖ 生死關</b>（書版 P31-P32 + IMG_0819，僅限命盤十年運 2-8 局，總格 1-10／81-90 歲不論）<br>
+      <b>📅 年紀對應</b>：第2局 11-20歲（學習格）｜第3局 21-30歲（情感格）｜第4局 31-40歲（事業格）｜第5局 41-50歲｜第6局 51-60歲｜第7局 61-70歲｜第8局 71-80歲<br>
+      <b>🚨 5 觸發層</b>：A. 中央無路+無保護+至少一支可吃中央 ｜B. 50歲後別色將/帥暴動可吃 ｜C. 70歲後出現分離格 ｜D. 81歲後不論保護只要能被吃就算（好朋友/悔恨格機率大）｜E. 陰陽不協調/消耗+包炮動能不足 → 可能性<br>
+      <b>💊 死因器官</b>：仕→呼吸/肺/大腸 ｜相→心血管 ｜馬→意外 ｜炮→腎/婦科 ｜兵→脾胃/免疫 ｜俥→肝膽/行車 ｜帥/將→重大關卡<br>
+      <b>⚔️ 死因方式（被誰吃）</b>：被將/帥吃→意外 ｜被士/仕吃→刀關 ｜被車/相吃→心血管 ｜被卒/兵吃→脾胃免疫<br>
+      <b>✦ 4 避過條件 H1-H4</b>：H1. 30歲前+總格有象/相→天助 ｜H2. 總格自己包炮馬傌可吃別人→神明力量 ｜H3. 總格自己可吃不同色象/相→累世修行 ｜H4. 當局雨傘格/十字天助/中央象相→有機會<br>
+      <b>📿 觸發後</b>：書版說「卦象只是讓我們看到意識資料庫裡有這樣的資料」 — 觸發≠必然發生，必須做完整療癒淨化（咒輪紙+下定義+交託+噴瓶+火化）清理該年紀的劇情。命盤頁會自動產出「⚠️ 生死關警示專區」明確列出年紀+原因+避過條件。</div>
   </div>`;
 
   // 書版 v2.0 — 問事 5 規則
