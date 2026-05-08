@@ -5057,43 +5057,60 @@ async function exportPDF(mode) {
     }
   };
 
-  try {
-    // 建立 off-screen wrapper（含標題 + 時間戳）讓 PDF 有專業排版
-    const today = new Date();
-    const dateStr = today.toLocaleString('zh-TW', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' });
-    const wrapper = document.createElement('div');
-    wrapper.style.cssText = 'position:fixed;left:-9999px;top:0;width:794px;background:#fff;padding:24px 32px;font-family:"PingFang TC","Noto Sans TC","Microsoft JhengHei","Heiti TC",sans-serif;color:#2c1810;line-height:1.65;box-sizing:border-box;';
-    wrapper.innerHTML = `
-      <div style="text-align:center;margin-bottom:18px;border-bottom:2px solid #6b3410;padding-bottom:12px;">
-        <h1 style="font-size:22px;color:#6b3410;margin:0 0 4px 0;font-weight:700;">濟公象棋卜卦系統</h1>
-        <div style="font-size:15px;color:#8b4513;font-weight:600;">${config.name}</div>
-        <div style="font-size:11px;color:#888;margin-top:4px;">產出時間：${dateStr}</div>
-      </div>
-    `;
-    // 複製 panel 內容（移除互動元件如 picker/picker-actions/help/印表機按鈕本身）
-    const cloned = panel.cloneNode(true);
-    cloned.querySelectorAll('.picker, .picker-actions, .help, button').forEach(el => el.remove());
-    cloned.style.display = 'block';
-    // 清理 cloned 內所有 onclick 等屬性避免錯誤
-    cloned.querySelectorAll('[onclick]').forEach(el => el.removeAttribute('onclick'));
-    wrapper.appendChild(cloned);
-    document.body.appendChild(wrapper);
+  // ===== v2.9.1 改：直接在原 panel 上 mutate（不用 cloneNode + off-screen wrapper）
+  // 原因：html2canvas 在 iOS Safari 對「fixed left:-9999px」off-screen 元素會截成空白。
+  // 改成：暫時隱藏 panel 內的互動元件 + 暫時 prepend 標題 → 截 panel → 還原。
 
-    // 等渲染（中文字體 + 圖示等）
+  // 1. 暫存被隱藏元素的 inline display（之後還原）
+  const hiddenEls = [];
+  panel.querySelectorAll('.picker, .picker-actions, .help, button').forEach(el => {
+    hiddenEls.push({ el, originalDisplay: el.style.display });
+    el.style.display = 'none';
+  });
+
+  // 2. 暫時 prepend 標題到 panel 最前面（含產出時間）
+  const today = new Date();
+  const dateStr = today.toLocaleString('zh-TW', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' });
+  const titleDiv = document.createElement('div');
+  titleDiv.id = '__pdf_title_temp__';
+  titleDiv.style.cssText = 'text-align:center;margin-bottom:18px;border-bottom:2px solid #6b3410;padding-bottom:12px;';
+  titleDiv.innerHTML = `
+    <h2 style="font-size:22px;color:#6b3410;margin:0 0 4px 0;font-weight:700;">濟公象棋卜卦系統</h2>
+    <div style="font-size:15px;color:#8b4513;font-weight:600;">${config.name}</div>
+    <div style="font-size:11px;color:#888;margin-top:4px;">產出時間：${dateStr}</div>
+  `;
+  panel.insertBefore(titleDiv, panel.firstChild);
+
+  // 3. 確保 panel 是 active（按鈕能按理論上 panel 一定 active，但保險起見）
+  const wasActive = panel.classList.contains('active');
+  if (!wasActive) panel.classList.add('active');
+
+  // 還原函數
+  const restorePanel = () => {
+    if (titleDiv.parentNode) titleDiv.remove();
+    hiddenEls.forEach(({el, originalDisplay}) => { el.style.display = originalDisplay; });
+    if (!wasActive) panel.classList.remove('active');
+  };
+
+  try {
+    // 等中文字體渲染完成
     await new Promise(r => setTimeout(r, 200));
 
     const filename = `${config.name}_${today.toISOString().slice(0,10)}.pdf`;
     const opts = {
-      margin: [10, 10, 10, 10],   // mm: top, left, bottom, right
+      margin: [10, 10, 10, 10],
       filename: filename,
       image: { type: 'jpeg', quality: 0.96 },
       html2canvas: {
-        scale: 2,                   // 2x 解析度（清晰）
+        scale: 2,
         useCORS: true,
         letterRendering: true,
         logging: false,
         backgroundColor: '#ffffff',
-        windowWidth: 794            // 對齊 wrapper width，避免 RWD 觸發
+        scrollX: 0,
+        scrollY: 0,
+        windowWidth: document.documentElement.scrollWidth,
+        windowHeight: document.documentElement.scrollHeight
       },
       jsPDF: {
         unit: 'mm',
@@ -5107,16 +5124,14 @@ async function exportPDF(mode) {
       }
     };
 
-    await html2pdf().set(opts).from(wrapper).save();
-    document.body.removeChild(wrapper);
+    // 直接從 active panel 截圖（panel 在使用者視野內，html2canvas 能正常渲染）
+    await html2pdf().set(opts).from(panel).save();
+    restorePanel();
     restoreBtn();
   } catch (err) {
     console.error('PDF 生成失敗:', err);
     alert('PDF 生成失敗：' + err.message + '\n\n備援：請使用瀏覽器內建的「列印 → 儲存為 PDF」功能。');
-    // 清理任何殘留 wrapper
-    document.querySelectorAll('div[style*="left:-9999px"]').forEach(el => {
-      if (el.parentNode) el.parentNode.removeChild(el);
-    });
+    restorePanel();
     restoreBtn();
   }
 }
