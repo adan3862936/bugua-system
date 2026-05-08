@@ -680,6 +680,16 @@
     body.print-natal .natal-grid { display: grid !important; }
     body.print-natal .layer-card { box-shadow: none; border: 1px solid #d4b896; }
 
+    /* 生命靈數列印：layout 改單欄（避免兩欄被擠到頁外）+ analysis 完整顯示 */
+    body.print-lingshu .layout { grid-template-columns: 1fr !important; gap: 12px; }
+    body.print-lingshu .board-card { box-shadow: none; border: 1px solid #d4b896; page-break-after: avoid; }
+    body.print-lingshu .analysis { box-shadow: none; padding: 0 !important; background: transparent !important; }
+    body.print-lingshu .layer-card { box-shadow: none; border: 1px solid #d4b896; }
+    body.print-lingshu input[type="text"],
+    body.print-lingshu input[type="number"] {
+      border: 1px solid #d4b896 !important; background: #faf3e8 !important;
+    }
+
     /* 全頁面元素都不要被切割 */
     .section, .layer-card, .board, .natal-grid {
       page-break-inside: avoid;
