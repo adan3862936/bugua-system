@@ -912,6 +912,7 @@
             </div>
             <div class="picker-actions">
               <button class="btn btn-primary" id="btn-calc-lingshu">📊 計算生命靈數</button>
+              <button class="btn btn-primary" id="btn-print-lingshu" style="background:#9b59b6;">📄 匯出生命靈數 PDF</button>
               <button class="btn btn-secondary" id="btn-clear-lingshu">清空</button>
             </div>
             <div style="margin-top:14px;padding:10px 12px;background:#fff8f0;border-left:3px solid #d4a574;border-radius:4px;font-size:12.5px;color:#6b3410;line-height:1.6;">
@@ -4983,6 +4984,7 @@ function calcLingshu(year, month, day) {
 function setupLingshu() {
   const btnCalc = document.getElementById('btn-calc-lingshu');
   const btnClear = document.getElementById('btn-clear-lingshu');
+  const btnPrint = document.getElementById('btn-print-lingshu');
   if (!btnCalc || !btnClear) return;
   btnCalc.onclick = () => analyzeLingshu();
   btnClear.onclick = () => {
@@ -4992,6 +4994,20 @@ function setupLingshu() {
     document.getElementById('lingshu-day').value = '';
     document.getElementById('analysis-lingshu').innerHTML = '<div class="empty-msg">請輸入西元出生年月日，按「📊 計算生命靈數」即可分析。</div>';
   };
+  if (btnPrint) {
+    btnPrint.onclick = () => {
+      // 若分析還沒跑過，先自動算一次再列印
+      const target = document.getElementById('analysis-lingshu');
+      const hasAnalysis = target && !target.querySelector('.empty-msg');
+      if (!hasAnalysis) {
+        analyzeLingshu();
+        // 確認分析有跑出來才印（沒輸入年月日的話會顯示警告，不該印）
+        const after = target.querySelector('.empty-msg');
+        if (after) return;
+      }
+      setTimeout(() => exportPDF('lingshu'), 100);
+    };
+  }
   ['lingshu-year','lingshu-month','lingshu-day','lingshu-name'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.addEventListener('keypress', e => { if (e.key === 'Enter') analyzeLingshu(); });
