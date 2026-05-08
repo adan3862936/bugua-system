@@ -731,9 +731,91 @@
     }
     body.print-single select { border: 1px solid #d4b896 !important; }
 
+    /* === 單卦盤面 .board print 修正 ===
+       桌面 .board 用 position:relative + 360x360 固定 + position:absolute 的 slots
+       iOS Safari 對實體印表機 paginate 含 absolute 內容的固定尺寸塊有 bug
+       → 整個 panel 被視為「無內容」變空白頁
+       解法：print 時把 .board 改成 grid 3x3，slots 用 grid-column/row 排列
+    */
+    body.print-single .board {
+      position: relative !important;
+      display: grid !important;
+      grid-template-columns: 1fr 1fr 1fr !important;
+      grid-template-rows: 1fr 1fr 1fr !important;
+      gap: 8px;
+      width: 100% !important;
+      max-width: 320px !important;
+      height: auto !important;
+      aspect-ratio: 1 / 1;
+      margin: 12px auto !important;
+      padding: 12px !important;
+      background: #fff !important;
+      border: 3px solid #6b3410;
+      page-break-inside: avoid !important;
+      overflow: visible !important;
+    }
+    body.print-single .slot {
+      position: relative !important;
+      top: auto !important; left: auto !important; right: auto !important; bottom: auto !important;
+      width: 100% !important;
+      height: 100% !important;
+      aspect-ratio: 1 / 1;
+      margin: 0 !important;
+      overflow: visible !important;
+    }
+    body.print-single .slot[data-pos="top"]    { grid-column: 2; grid-row: 1; }
+    body.print-single .slot[data-pos="left"]   { grid-column: 1; grid-row: 2; }
+    body.print-single .slot[data-pos="center"] { grid-column: 2; grid-row: 2; }
+    body.print-single .slot[data-pos="right"]  { grid-column: 3; grid-row: 2; }
+    body.print-single .slot[data-pos="bottom"] { grid-column: 2; grid-row: 3; }
+    /* pos-label 在板子外圍的 absolute 標籤 — 列印時不需要 */
+    body.print-single .pos-label { display: none !important; }
+
     /* 命盤列印補強 */
     body.print-natal .natal-input { padding: 8px; }
-    body.print-natal .natal-grid { display: grid !important; }
+
+    /* === 命盤盤面 .natal-grid print 修正 ===
+       同樣可能因 grid + absolute children 在實體印表機 paginate 出 bug
+       強制 grid 8 欄，所有 cell visibility 確保
+    */
+    body.print-natal .natal-grid {
+      display: grid !important;
+      grid-template-columns: repeat(8, 1fr) !important;
+      gap: 4px !important;
+      width: 100% !important;
+      max-width: 100% !important;
+      box-sizing: border-box !important;
+      page-break-inside: avoid !important;
+      overflow: visible !important;
+    }
+    body.print-natal .natal-cell {
+      visibility: visible !important;
+      overflow: visible !important;
+      width: auto !important;
+      min-width: 0 !important;
+    }
+
+    /* === 命盤每局十字陣形 .layer-mini-board print 修正 === */
+    .layer-mini-board {
+      display: grid !important;
+      visibility: visible !important;
+      overflow: visible !important;
+    }
+    .mini-piece {
+      visibility: visible !important;
+      overflow: visible !important;
+    }
+
+    /* === 全域：所有 panel 子元素 visibility + overflow 強制 === */
+    .panel, .panel * {
+      visibility: visible;
+    }
+    .container, .panel, .layout, .layer-card, .board-card, .analysis,
+    .natal-input, .natal-output, .section {
+      overflow: visible !important;
+      max-width: 100% !important;
+      box-sizing: border-box !important;
+    }
 
     /* 生命靈數列印補強 */
     body.print-lingshu input[type="text"],
