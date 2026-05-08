@@ -648,53 +648,107 @@
 
   /* 列印（依 body class 切換要列印的分頁） */
   @media print {
-    @page { margin: 1.2cm; }
-    body { background: #fff; padding: 0; }
-    .container { max-width: 100%; }
+    @page { margin: 1.2cm; size: A4 portrait; }
+
+    /* === 全域 reset：避免印表機 A4 紙寬下被 fixed width / grid 溢出截斷 === */
+    html, body {
+      width: 100% !important;
+      min-width: 0 !important;
+      max-width: none !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      background: #fff !important;
+      color: #000;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    .container {
+      max-width: 100% !important;
+      width: 100% !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+
+    /* 隱藏螢幕專用 UI */
     .tabs, .help { display: none !important; }
     .picker, .picker-actions { display: none !important; }
     h1 { font-size: 22px; margin-bottom: 4px; }
     .subtitle { font-size: 12px; margin-bottom: 12px; }
 
-    /* 預設顯示模式（無 body class 時，不應該發生）*/
+    /* 預設隱藏所有 panel */
     .panel { display: none !important; }
 
-    /* 模式控制：依 body class 顯示對應 panel */
+    /* 模式控制：依 body class 顯示對應 panel（用 #id 高 specificity 覆蓋桌面 CSS）*/
     body.print-single #panel-single,
     body.print-natal #panel-natal,
     body.print-pastlife #panel-pastlife,
     body.print-lingshu #panel-lingshu,
-    body.print-reference #panel-reference { display: block !important; }
+    body.print-reference #panel-reference {
+      display: block !important;
+      width: 100% !important;
+      max-width: 100% !important;
+    }
 
-    /* 單卦列印：保留盤面 + 問事欄位 + 分析 */
-    body.print-single .layout { grid-template-columns: 1fr; gap: 12px; }
-    body.print-single .board-card { box-shadow: none; border: 1px solid #d4b896; }
+    /* === 重點修正：把所有 grid layout 強制變 block，覆蓋桌面「420px 1fr」固定寬度 ===
+       桌面 CSS：`.layout { grid-template-columns: 420px 1fr; }` 在 A4 紙寬（21cm≈595pt）下
+       iOS Safari 印表機驅動對 grid 計算有 bug，會把右欄 .analysis 整個截到頁外 → 空白頁。
+       改成 block 後上下排列，每個元素 100% 寬度，所有印表機都能正確列印。
+    */
+    .layout, .natal-output {
+      display: block !important;
+      grid-template-columns: none !important;
+    }
+    .layout > * {
+      width: 100% !important;
+      max-width: 100% !important;
+      margin-bottom: 12px;
+      box-sizing: border-box !important;
+    }
+    .board-card, .analysis, .layer-card {
+      width: 100% !important;
+      max-width: 100% !important;
+      box-sizing: border-box !important;
+      box-shadow: none !important;
+      border: 1px solid #d4b896;
+    }
+    .analysis {
+      padding: 0 !important;
+      background: transparent !important;
+      border: none !important;
+    }
+
+    /* 確保 inline grid（如生命靈數結果摘要 6 欄、9 宮格、五行生克 5 卡片）也不溢出 */
+    [style*="grid-template-columns"], [style*="display:grid"], [style*="display: grid"] {
+      max-width: 100% !important;
+      box-sizing: border-box !important;
+    }
+
+    /* 單卦列印補強 */
     body.print-single textarea {
       border: 1px solid #d4b896 !important; padding: 10px !important;
       background: #faf3e8 !important; min-height: auto !important;
+      width: 100% !important; box-sizing: border-box !important;
     }
     body.print-single select { border: 1px solid #d4b896 !important; }
 
-    /* 命盤列印：保留 32 子盤面網格 + 8 局拆分 */
+    /* 命盤列印補強 */
     body.print-natal .natal-input { padding: 8px; }
     body.print-natal .natal-grid { display: grid !important; }
-    body.print-natal .layer-card { box-shadow: none; border: 1px solid #d4b896; }
 
-    /* 生命靈數列印：layout 改單欄（避免兩欄被擠到頁外）+ analysis 完整顯示 */
-    body.print-lingshu .layout { grid-template-columns: 1fr !important; gap: 12px; }
-    body.print-lingshu .board-card { box-shadow: none; border: 1px solid #d4b896; page-break-after: avoid; }
-    body.print-lingshu .analysis { box-shadow: none; padding: 0 !important; background: transparent !important; }
-    body.print-lingshu .layer-card { box-shadow: none; border: 1px solid #d4b896; }
+    /* 生命靈數列印補強 */
     body.print-lingshu input[type="text"],
     body.print-lingshu input[type="number"] {
-      border: 1px solid #d4b896 !important; background: #faf3e8 !important;
+      border: 1px solid #d4b896 !important;
+      background: #faf3e8 !important;
+      width: 100% !important;
+      box-sizing: border-box !important;
     }
+    body.print-lingshu .board-card { page-break-after: avoid; }
 
     /* 全頁面元素都不要被切割 */
     .section, .layer-card, .board, .natal-grid {
       page-break-inside: avoid;
     }
-    .analysis { box-shadow: none; }
   }
 </style>
 </head>
