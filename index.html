@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>濟公象棋卜卦系統</title>
+<!-- html2pdf.js：直接 DOM → Canvas → PDF 下載，繞過印表機驅動 paginate bug -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.3/html2pdf.bundle.min.js" defer></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -5016,23 +5018,107 @@ function renderReference() {
   target.innerHTML = html;
 }
 
-/* ===== PDF 匯出（依模式列印對應分頁） ===== */
-function exportPDF(mode) {
-  const cls = `print-${mode}`;
-  document.body.classList.add(cls);
-  const cleanup = () => {
-    document.body.classList.remove(cls);
-    window.removeEventListener('afterprint', cleanup);
-  };
-  window.addEventListener('afterprint', cleanup);
-  // 觸發列印對話框，使用者可選「儲存為 PDF」
-  setTimeout(() => window.print(), 50);
-  // 備援：如果 afterprint 沒觸發（某些瀏覽器），3 秒後也清除
-  setTimeout(() => {
-    if (document.body.classList.contains(cls)) {
-      document.body.classList.remove(cls);
+/* ===== PDF 匯出 v2.9（html2pdf.js 直接 DOM → Canvas → PDF 下載）=====
+   不再走 window.print() 觸發瀏覽器列印對話框（避開 iOS Safari 印表機驅動 paginate bug），
+   改用 html2pdf.js 純 JS DOM 截圖直接生成 PDF 檔下載。
+   優點：① 不依賴印表機 ② 內容跟螢幕看到的一致 ③ 自動分頁 ④ iOS/Android/桌面都能用
+*/
+const PDF_PANEL_MAP = {
+  'single':    { panel:'panel-single',    name:'單卦解盤' },
+  'natal':     { panel:'panel-natal',     name:'命盤解盤' },
+  'pastlife':  { panel:'panel-pastlife',  name:'前世因果解盤' },
+  'lingshu':   { panel:'panel-lingshu',   name:'生命靈數' },
+  'reference': { panel:'panel-reference', name:'速查表' }
+};
+
+async function exportPDF(mode) {
+  const config = PDF_PANEL_MAP[mode];
+  if (!config) { alert('未知的匯出模式：' + mode); return; }
+  const panel = document.getElementById(config.panel);
+  if (!panel) { alert('找不到面板：' + config.panel); return; }
+
+  // 確認 html2pdf.js 已載入
+  if (typeof html2pdf === 'undefined') {
+    alert('PDF 工具還在載入中，請稍待 2-3 秒再試。');
+    return;
+  }
+
+  // 防止重複點擊
+  const btn = document.activeElement;
+  const oldBtnText = btn && btn.textContent;
+  if (btn && btn.tagName === 'BUTTON') {
+    btn.disabled = true;
+    btn.textContent = '⏳ 產出 PDF 中...';
+  }
+  const restoreBtn = () => {
+    if (btn && btn.tagName === 'BUTTON') {
+      btn.disabled = false;
+      btn.textContent = oldBtnText;
     }
-  }, 3000);
+  };
+
+  try {
+    // 建立 off-screen wrapper（含標題 + 時間戳）讓 PDF 有專業排版
+    const today = new Date();
+    const dateStr = today.toLocaleString('zh-TW', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' });
+    const wrapper = document.createElement('div');
+    wrapper.style.cssText = 'position:fixed;left:-9999px;top:0;width:794px;background:#fff;padding:24px 32px;font-family:"PingFang TC","Noto Sans TC","Microsoft JhengHei","Heiti TC",sans-serif;color:#2c1810;line-height:1.65;box-sizing:border-box;';
+    wrapper.innerHTML = `
+      <div style="text-align:center;margin-bottom:18px;border-bottom:2px solid #6b3410;padding-bottom:12px;">
+        <h1 style="font-size:22px;color:#6b3410;margin:0 0 4px 0;font-weight:700;">濟公象棋卜卦系統</h1>
+        <div style="font-size:15px;color:#8b4513;font-weight:600;">${config.name}</div>
+        <div style="font-size:11px;color:#888;margin-top:4px;">產出時間：${dateStr}</div>
+      </div>
+    `;
+    // 複製 panel 內容（移除互動元件如 picker/picker-actions/help/印表機按鈕本身）
+    const cloned = panel.cloneNode(true);
+    cloned.querySelectorAll('.picker, .picker-actions, .help, button').forEach(el => el.remove());
+    cloned.style.display = 'block';
+    // 清理 cloned 內所有 onclick 等屬性避免錯誤
+    cloned.querySelectorAll('[onclick]').forEach(el => el.removeAttribute('onclick'));
+    wrapper.appendChild(cloned);
+    document.body.appendChild(wrapper);
+
+    // 等渲染（中文字體 + 圖示等）
+    await new Promise(r => setTimeout(r, 200));
+
+    const filename = `${config.name}_${today.toISOString().slice(0,10)}.pdf`;
+    const opts = {
+      margin: [10, 10, 10, 10],   // mm: top, left, bottom, right
+      filename: filename,
+      image: { type: 'jpeg', quality: 0.96 },
+      html2canvas: {
+        scale: 2,                   // 2x 解析度（清晰）
+        useCORS: true,
+        letterRendering: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+        windowWidth: 794            // 對齊 wrapper width，避免 RWD 觸發
+      },
+      jsPDF: {
+        unit: 'mm',
+        format: 'a4',
+        orientation: 'portrait',
+        compress: true
+      },
+      pagebreak: {
+        mode: ['avoid-all', 'css', 'legacy'],
+        avoid: ['.layer-card', '.section', '.board-card', '.minge-table', '.death-pass-warning', '.purification-card']
+      }
+    };
+
+    await html2pdf().set(opts).from(wrapper).save();
+    document.body.removeChild(wrapper);
+    restoreBtn();
+  } catch (err) {
+    console.error('PDF 生成失敗:', err);
+    alert('PDF 生成失敗：' + err.message + '\n\n備援：請使用瀏覽器內建的「列印 → 儲存為 PDF」功能。');
+    // 清理任何殘留 wrapper
+    document.querySelectorAll('div[style*="left:-9999px"]').forEach(el => {
+      if (el.parentNode) el.parentNode.removeChild(el);
+    });
+    restoreBtn();
+  }
 }
 
 /* ===== 生命靈數＋後天五行＋九星五行 =====
