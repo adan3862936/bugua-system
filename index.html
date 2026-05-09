@@ -968,7 +968,7 @@
         </div>
       </div>
       <div style="font-size:11px;color:#888;margin-bottom:10px;line-height:1.5;">
-        說明：性別+婚姻會影響②③位置代表的人物（男未婚=②姊妹/女友 ③兄弟｜男已婚=②妻子 ③兄弟｜女未婚=②姊妹 ③兄弟/男友｜女已婚=②兄弟姊妹 ③丈夫）。<b>女性卜主</b>命盤會自動觸發離婚格判定（書版 v2.6）。
+        說明：性別+婚姻會影響②③位置代表的人物（男未婚=②姊妹/女友 ③兄弟｜男已婚=②妻子 ③兄弟｜女未婚=②姊妹 ③兄弟/男友｜女已婚=②兄弟姊妹 ③丈夫）。<b>女性卜主</b>命盤會自動觸發離婚格判定（書版 v2.9.2）。
       </div>
       <div class="picker-title">選棋子（也可以重複放）：當前選擇 <span id="cur-pick-natal">尚未選擇</span></div>
       <div class="picker-grid" id="picker-natal"></div>
@@ -1170,17 +1170,22 @@ function getMiddle(a, b) {
   if ((a==='left' && b==='right') || (a==='right' && b==='left')) return 'center';
   return null;
 }
-// 兵卒方向是否合法：紅兵不可後退（紅前=上）；黑卒不可後退（黑前=下）
+// 兵卒方向是否合法（v2.9.2 修正，2026-05-09 祥哥糾正）
+//   蔡建安老師明確規則（disciple-lecture transcript 行 117-118, 137-139, 146-147, 194-195）：
+//     「兵啊，只能前進，左右不能後退...往前衝，左右邊的敵人都可以攻，可是唯一不行的就是後退」
+//     「兵呢只能一步一腳印往前走、往左右走，不能後退」
+//     「卒只能往上跟左右」←（這句最關鍵，明確說卒也是「上、左、右」）
+//   濟公象棋卜卦特殊規則：兵卒不分顏色，一律「上、左、右」可走，「下」=後退=禁止
+//   （跟傳統象棋紅黑方向相反不一樣，這是書本明確規定）
+//   ① 從上→中央 = 往下 = 後退 ✗
+//   ② 從中央→下 = 往下 = 後退 ✗
+//   ③ 從下→中央 = 往上 = 前進 ✓
+//   ④ 從中央→上 = 往上 = 前進 ✓
+//   ⑤ 左↔中央、右↔中央 = 平移 ✓
 function bingDirOK(color, from, to) {
-  if (color === 'red') {
-    // 紅兵不能往下（後退）
-    if (from === 'top' && to === 'center') return false;
-    if (from === 'center' && to === 'bottom') return false;
-  } else {
-    // 黑卒不能往上（後退）
-    if (from === 'bottom' && to === 'center') return false;
-    if (from === 'center' && to === 'top') return false;
-  }
+  // 兵卒一律不能往下（不分顏色）
+  if (from === 'top' && to === 'center') return false;
+  if (from === 'center' && to === 'bottom') return false;
   return true;
 }
 
@@ -4797,7 +4802,27 @@ function renderReference() {
   }
   html += '</div></div>';
 
-  html += `<div class="section"><div class="section-title">26 格局速查（書版 v2.6 — 《改寫人生的象棋卜卦》）</div>
+  // 書版 v2.9.2 — 象棋走法（祥哥 2026-05-09 糾正後新增）
+  html += `<div class="section"><div class="section-title">象棋走法速查（書版 v2.9.2 — 第 5 章基本概念）</div>
+    <div class="item">📌 <b>將／帥</b>：上下左右相鄰可吃（不論異色比它大的也吃不到，一樣大互吃）。<small>蔡老師：「將最大、帥最大，將跟帥都是」</small></div>
+    <div class="item">📌 <b>士／仕</b>：上下左右相鄰可吃。比士小的可吃（將不能吃）。同階互吃。</div>
+    <div class="item">📌 <b>象／相</b>：上下左右相鄰可吃。比相小的可吃（將/士不能吃）。同階互吃。</div>
+    <div class="item">📌 <b>俥／車</b>：直線上下左右皆可吃，<b>跨越中央時中央有棋也能吃</b>（飛山）。書本：「車也可以隔位吃，中間是空的也可以吃」</div>
+    <div class="item warn">📌 <b>傌／馬</b>：<b>只能走斜的</b>（日字步），5 子盤無斜方向可吃任何外圍棋 → <b>馬永遠吃不到</b>。馬入中宮 = 有志難伸無法伸展。</div>
+    <div class="item warn">📌 <b>炮／包</b>：<b>必須隔山跳一格才能吃</b>，中間要有棋當跳板。中央↔外圍無中間 → 不能吃。外圍↔對面外圍中間是中央（有棋=跳板可吃）。炮入中宮也吃不到。</div>
+    <div class="item" style="border-left:5px solid #c8102e;background:#fff8e8;">📌 <b>兵／卒（v2.9.2 修正重點）</b>：<b>只能往「上、左、右」走，「下」=後退=禁止</b>。<br>
+      <small style="color:#c8102e;"><b>⚠ 重要：兵卒不分顏色一律相同規則</b>（這是濟公象棋卜卦特色，跟傳統象棋紅黑方向相反不同）：</small><br>
+      <small>✓ 從下→中央 = 往上 = 前進可吃</small><br>
+      <small>✓ 從中央→上 = 往上 = 前進可吃</small><br>
+      <small>✓ 左↔中央、右↔中央 = 平移可吃</small><br>
+      <small>✗ <b>從上→中央 = 往下 = 後退禁止</b>（即使顏色不同也不能吃）</small><br>
+      <small>✗ <b>從中央→下 = 往下 = 後退禁止</b></small><br>
+      <small style="color:#666;">蔡老師原話：「兵啊，只能前進，左右不能後退...卒只能往上跟左右」「兵呢只能一步一腳印往前走、往左右走，不能後退」</small></div>
+    <div class="item">📌 <b>同色不能互吃</b>。同階異色可互吃（如將↔帥、象↔相、士↔仕）。</div>
+    <div class="item">📌 <b>保護判定</b>：當 attacker 移到 victim 位置後，是否有同色守衛能反吃這個 attacker → 有=被保護，分數減半。</div>
+  </div>`;
+
+  html += `<div class="section"><div class="section-title">26 格局速查（書版 v2.9.2 — 《改寫人生的象棋卜卦》）</div>
     <div class="item">📌 <b>① 好朋友格</b>：同字異色配對（將仕象車兵=中外圍相鄰／馬=斜對／炮=跨中央有跳板）→ 互相欣賞，整盤分數減半</div>
     <div class="item">📌 <b>② 好人緣格</b>：同字異色但不符好朋友位置（看得到=相鄰或斜對；炮包除外）→ 人緣不錯，可互吃</div>
     <div class="item">📌 <b>③ 互相欣賞格</b>：黑士+紅俥 / 紅仕+黑車 → 彼此欣賞，能降低威脅能量</div>
@@ -4832,8 +4857,8 @@ function renderReference() {
       <b>📿 觸發後</b>：書版說「卦象只是讓我們看到意識資料庫裡有這樣的資料」 — 觸發≠必然發生，必須做完整療癒淨化（咒輪紙+下定義+交託+噴瓶+火化）清理該年紀的劇情。命盤頁會自動產出「⚠️ 生死關警示專區」明確列出年紀+原因+避過條件。</div>
   </div>`;
 
-  // 書版 v2.8 — 生命靈數＋後天五行＋九星五行對照表
-  html += `<div class="section"><div class="section-title">生命靈數・後天五行・九星五行對照表（書版 v2.8 — 《生命靈數開運密碼・九星 X 五行》）</div>
+  // 書版 v2.9.2 — 生命靈數＋後天五行＋九星五行對照表
+  html += `<div class="section"><div class="section-title">生命靈數・後天五行・九星五行對照表（書版 v2.9.2 — 《生命靈數開運密碼・九星 X 五行》）</div>
     <div class="item">📌 <b>計算規則</b>：把西元出生年月日的所有數字疊加，反覆相加直到單位數（1-9）= 靈數。<br>例：1983/04/04 → 1+9+8+3+0+4+0+4 = 29 → 2+9 = 11 → 1+1 = 2（土）。</div>
     <div class="item">📌 <b>先天五行 vs 後天五行</b>：先天=【命】（與生俱來的稟賦），後天=【運】。透過風水、中醫、命理（能量礦石、開運顏色）等可調整後天五行，達到趨吉避凶的作用。本系統算的是<b>後天五行</b>。</div>
     <div class="item">📌 <b>1-9 對照速查</b>（五行・八卦・自然・九星・五德・個性類型）：<br>
@@ -4858,7 +4883,7 @@ function renderReference() {
   </div>`;
 
   // 書版 v2.0 — 問事 5 規則
-  html += `<div class="section"><div class="section-title">問事 5 規則（書版 v2.6）</div>
+  html += `<div class="section"><div class="section-title">問事 5 規則（書版 v2.9.2）</div>
     <div class="item warn">📌 <b>規則一：命盤限本人抓棋，問事單卦只能問自己或直系血親</b><br>例外：卦主不便時可說「允許某某代我抓棋」（僅限問事單卦，年運/命盤不可）</div>
     <div class="item">📌 <b>規則二：可與其它占卜搭配</b>（生命靈數、後天五行等互補）</div>
     <div class="item warn">📌 <b>規則三：問題問得越明確越好</b><br>❌ 差：跟著朋友投資房地產會不會賺錢？<br>✅ 好：朋友跟我說的「那個房地產項目」，我投資的話會不會賺錢？</div>
@@ -4867,14 +4892,14 @@ function renderReference() {
   </div>`;
 
   // 書版 v2.0 — 問法善巧
-  html += `<div class="section"><div class="section-title">問法善巧（書版 v2.6 — 取代「要不要做」式問法）</div>
+  html += `<div class="section"><div class="section-title">問法善巧（書版 v2.9.2 — 取代「要不要做」式問法）</div>
     <div class="item warn">❌ 不精準問法：要不要做這件事？／他愛不愛我？／某人會不會選上？</div>
     <div class="item good">✅ 善巧問法：<br>　• 我去做這件事好不好？<br>　• 我做這件事會呈現什麼狀態？<br>　• 我做這件事有沒有什麼要注意的？<br>　• 我會不會跟某某結婚？／某某的決定對我是否有好影響？<br>　• 配偶/兄弟姐妹改成「他做的事會不會讓我開心」這種延伸到自己身上的問法</div>
     <div class="item info">書版心法：「卜卦的定位不是在幫別人算命，而是在幫助一個人『認識自己』」</div>
   </div>`;
 
   // 書版 v2.0 — 標準解卦五段式順序
-  html += `<div class="section"><div class="section-title">標準解卦五段式順序（書版 v2.6）</div>
+  html += `<div class="section"><div class="section-title">標準解卦五段式順序（書版 v2.9.2）</div>
     <div class="item">① <b>狀態</b>：從中央以及與中央同色的棋子論卦主特質</div>
     <div class="item">② <b>互動關係</b>：跟身邊的人的互動（吃、被吃、影響力）</div>
     <div class="item">③ <b>格局及需注意的狀態</b>：含犯小人、做錯決定、需留意的意外</div>
@@ -4915,13 +4940,13 @@ function renderReference() {
     <div class="item">🔮 <b>命盤</b> 看一輩子，32 支棋拆 8 局（每局重疊「上=前局下」），一輩子只能摸一次（除非顯化淨化過）</div>
     <div class="item">❓ <b>事件卦</b> 問具體事，全紅全黑 = 老天爺不答可換問法重來</div>
     <div class="item">🔄 <b>前世因果</b> 看前世身分、跟某人的前世關係</div>
-    <div class="item info">🆕 <b>療癒淨化效果卦</b>（書版 v2.6）：問「我療癒淨化的效果如何？」只看收穫不算付出</div>
+    <div class="item info">🆕 <b>療癒淨化效果卦</b>（書版 v2.9.2）：問「我療癒淨化的效果如何？」只看收穫不算付出</div>
     <div class="item warn">⚠ 一事一卦，不準也不能重複問同件事（除非設定期間如「3個月後再卜」或療癒淨化後）</div>
     <div class="item info">🆕 <b>命盤重排判定</b>：療癒淨化後想重排命盤，先卜單卦，中央=兵卒+乾淨好朋友格 → 可重排</div>
   </div>`;
 
   // 書版 v2.0 — 吃與被吃棋子的衍伸解釋表
-  html += `<div class="section"><div class="section-title">吃與被吃棋子的衍伸解釋表（書版 v2.6 — 第7章）</div>
+  html += `<div class="section"><div class="section-title">吃與被吃棋子的衍伸解釋表（書版 v2.9.2 — 第7章）</div>
     <div style="overflow-x:auto;">
     <table style="width:100%;border-collapse:collapse;font-size:13px;">
       <thead style="background:#fce8d0;color:#6b3410;">
@@ -4947,7 +4972,7 @@ function renderReference() {
   </div>`;
 
   // 書版 v2.0 — 前世關係判定表
-  html += `<div class="section"><div class="section-title">前世關係判定（書版 v2.6 — 第9章）</div>
+  html += `<div class="section"><div class="section-title">前世關係判定（書版 v2.9.2 — 第9章）</div>
     <div class="item info">前世卦看「卦主-對象」二棋的位置與棋種對應</div>
     <div class="item"><b>🔴 兵卒（直系血親較多）</b><br>　• ①兵+②卒：對方是你的妻子｜①兵+③卒：對方是兄弟姊妹<br>　• ①卒+③兵：對方是你的老公｜①卒+②兵：對方是兄弟姊妹<br>　• ①+④（中與上）：父母｜①+⑤（中與下）：子女<br>　• ④+⑤（上與下）：祖父母與孫子｜②+③（左右）：非直系血親兄弟姊妹<br>　• 斜對（②④/②⑤/③④/③⑤）：叔伯、姑嬸、舅舅、阿姨、姪子姪女</div>
     <div class="item"><b>🟣 炮包（情人類）</b><br>　• 炮包相鄰／偏桃花（①②/①③/①④/①⑤）：短暫的情人<br>　• 炮包隔山／正桃花（②③/④⑤）：外遇對象、情人或小妾<br>　• 炮包斜對／偏桃花（②④/②⑤/③④/③⑤）：有情慾但沒有真正交流的對象</div>
@@ -4960,7 +4985,7 @@ function renderReference() {
   </div>`;
 
   // 書版 v2.0 — 暴動格人體部位對照
-  html += `<div class="section"><div class="section-title">暴動格人體部位對應（書版 v2.6 — 鏡像）</div>
+  html += `<div class="section"><div class="section-title">暴動格人體部位對應（書版 v2.9.2 — 鏡像）</div>
     <div class="item info">棋盤位置 ↔ 人體部位（卦象的位置與人體左右剛好相反，因為棋盤是「面對我們的人」）</div>
     <div class="item">① 中央 → 脖子以下、肚臍以上（軀幹中央氣血循環）</div>
     <div class="item">② 左 → 身體<b>右側</b>（鏡像）</div>
@@ -4971,7 +4996,7 @@ function renderReference() {
   </div>`;
 
   // 書版 v2.0 — 療癒淨化效果判定表
-  html += `<div class="section"><div class="section-title">療癒淨化效果判定表（書版 v2.6 — 第10章）</div>
+  html += `<div class="section"><div class="section-title">療癒淨化效果判定表（書版 v2.9.2 — 第10章）</div>
     <div class="item info">問法：「<b>我療癒淨化／刪除資料的效果如何？</b>」<br>解卦：<b>只看「有沒有得吃」或「有沒有收穫」，不算付出</b></div>
     <div class="item">📌 <b>兵卒好朋友格</b>：方法正確且已清理到真正根源</div>
     <div class="item">📌 <b>其他好朋友格 / 相鄰明君格</b>：方法跟方向是正確的</div>
@@ -5008,7 +5033,7 @@ function renderReference() {
   </div>`;
 
   // 書版 v2.0 — 卦象中不同位置代表的角色（依卜主性別+婚姻狀態）
-  html += `<div class="section"><div class="section-title">位置代表的角色（書版 v2.6 — 第5章）</div>
+  html += `<div class="section"><div class="section-title">位置代表的角色（書版 v2.9.2 — 第5章）</div>
     <div class="item info">通用：①中=自己／④上=長輩(年齡>10歲)／⑤下=晚輩(年齡<10歲)<br>口訣：左手比較沒力 → ②左=女生；右手比較有力 → ③右=男生</div>
     <div class="item"><b>👨 男性卜主</b><br>　• 未婚：②姊妹/女朋友/女性平輩｜③兄弟/男性平輩<br>　• 已婚：②妻子/女性平輩｜③兄弟/男性平輩<br>　• 男性結婚前後跟兄弟關係不變，但跟姊妹會不一樣</div>
     <div class="item"><b>👩 女性卜主</b><br>　• 未婚：②姊妹/女性平輩｜③兄弟/男朋友/男性平輩<br>　• 已婚：②兄弟姊妹/女性平輩｜③丈夫/男性平輩<br>　• 女性結婚前後跟姊妹關係不變，但跟兄弟會不一樣（看法位置從③改看②）</div>
