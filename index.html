@@ -968,7 +968,7 @@
         </div>
       </div>
       <div style="font-size:11px;color:#888;margin-bottom:10px;line-height:1.5;">
-        說明：性別+婚姻會影響②③位置代表的人物（男未婚=②姊妹/女友 ③兄弟｜男已婚=②妻子 ③兄弟｜女未婚=②姊妹 ③兄弟/男友｜女已婚=②兄弟姊妹 ③丈夫）。<b>女性卜主</b>命盤會自動觸發離婚格判定（書版 v2.9.4）。
+        說明：性別+婚姻會影響②③位置代表的人物（男未婚=②姊妹/女友 ③兄弟｜男已婚=②妻子 ③兄弟｜女未婚=②姊妹 ③兄弟/男友｜女已婚=②兄弟姊妹 ③丈夫）。<b>女性卜主</b>命盤會自動觸發離婚格判定（書版 v2.9.5）。
       </div>
       <div class="picker-title">選棋子（也可以重複放）：當前選擇 <span id="cur-pick-natal">尚未選擇</span></div>
       <div class="picker-grid" id="picker-natal"></div>
@@ -1210,6 +1210,29 @@ function isMingjunBlocked(board, attackerPos, victimPos) {
   // 「看得到」= 相鄰 OR 斜對（書本 P75 明君格成立條件）
   const sees = isAdjacent(attackerPos, victimPos) || isDiagonalPair(attackerPos, victimPos);
   return sees;
+}
+
+// 中央能否「過局往上吃」上一局任一對方棋（生死關「飛不出去」第 3 條件）
+// 老師（吳慧琳）範例（書本 P31-32 配套規則）：
+//   ▼ 局 7 中棋炮 → 能飛到上面過局往上吃 → 飛得出去 → 不構成生死關
+//   ▼ 局 8 中棋馬 → 馬也出不去 → 飛不出去 → 構成生死關
+//
+// 規則：
+//   ◎ 車/俥（直線飛山）→ 跨局能直接吃上一局任何對方棋 → 能飛出去
+//   ◎ 炮/包（跳格吃）→ 跨局能跳格吃上一局任何對方棋 → 能飛出去
+//   ◎ 馬/傌（走斜）→ 5 子盤無斜方向，永遠吃不到（跨局也一樣）→ 飛不出去
+//   ◎ 將/帥、士/仕、象/相、兵/卒（相鄰限制）→ 跨局距離太遠，吃不到 → 飛不出去
+function canEscapeUpward(currentLb, prevLb) {
+  if (!prevLb || !currentLb || !currentLb.center) return false;
+  const c = currentLb.center;
+  if (c.kind === 'che' || c.kind === 'pao') {
+    // 車/炮 能跨局飛山到上一局任何位置（書本/老師明確：炮可飛到上面過局往上吃）
+    for (const p of POSITIONS) {
+      const t = prevLb[p];
+      if (t && t.color !== c.color) return true;
+    }
+  }
+  return false;
 }
 
 // 核心：attacker 能否吃 victim
@@ -1833,8 +1856,16 @@ function detectPatterns(board, context) {
 
     // 中央能否吃任何外圍（含同色／異色）→ 用於 A 條件「中央可不可以反吃」
     const centerCanEatAny = POSITIONS.some(p => p !== 'center' && board[p] && canEat(board, 'center', p));
-    // 中央能否吃「異色」外圍 → 過局往上吃也算「出得去」，但這裡先以同盤反吃判定
+    // 中央能否吃「異色」外圍 → 同盤反吃
     const centerCanFightBack = POSITIONS.some(p => p !== 'center' && board[p] && board[p].color !== center.color && canEat(board, 'center', p));
+    // 中央能否「過局往上吃」上一局任一對方棋（書本「飛不出去」第 3 條件，v2.9.5 新增）
+    //   老師（吳慧琳）範例：局 7 中棋炮能飛到上面過局往上吃 → 不生死關
+    //                     局 8 中棋馬也出不去 → 生死關
+    const canEscapeCrossLayer = canEscapeUpward(board, context.prevLb);
+    // 整合：書本生死關「飛不出去」= 不能同盤反吃 且 不能過局往上吃
+    //   = (!centerCanFightBack && !canEscapeCrossLayer) 才算「飛不出去」
+    //   = 反過來「飛得出去」就是 centerCanFightBack || canEscapeCrossLayer
+    const canEscape = centerCanFightBack || canEscapeCrossLayer;
 
     // 列出能吃中央的攻擊者（無保護）
     const attackers = [];
@@ -1871,9 +1902,14 @@ function detectPatterns(board, context) {
     let triggered = false;
     let mainAttacker = attackers[0] || null;
 
-    // ▶ A：一般原則 — 中央無路（不能反吃）+ 至少一支能吃中央且無保護；若中央能反吃同攻擊者 → 不算
-    if (attackers.length > 0 && !centerCanFightBack) {
-      reasons.push('A 一般原則：中央無法反吃外圍且無保護被吃');
+    // ▶ A：書本/老師生死關三條件（v2.9.5 完整對齊 — 老師吳慧琳 LINE 訊息：
+    //       「生死觀有三個條件：一定被吃掉、沒人保護、也飛不出去」）
+    //    ① 一定被吃掉：attackers.length > 0（外圍有對方棋能吃中央）
+    //    ② 沒人保護：attackers 已過濾掉「被保護」的攻擊者
+    //    ③ 飛不出去：!canEscape（不能同盤反吃 且 不能過局往上吃上一局棋）
+    if (attackers.length > 0 && !canEscape) {
+      const escapeNote = context.prevLb ? '（不能同盤反吃，也不能過局往上吃上一局對方棋）' : '（不能同盤反吃）';
+      reasons.push(`A 一般原則：中央被吃、無保護、飛不出去${escapeNote}`);
       triggers.push('A');
       triggered = true;
     }
@@ -1904,10 +1940,10 @@ function detectPatterns(board, context) {
       }
     }
 
-    // ▶ D：81 歲後特殊判定 — 不論保護，只要能被吃就算；但中央能反吃 → 不算
+    // ▶ D：81 歲後特殊判定 — 不論保護，只要能被吃就算；但中央能反吃或過局往上吃 → 不算
     if (ageStart >= 81) {
-      if (attackersIgnoreProtect.length > 0 && !centerCanFightBack) {
-        reasons.push('D 81歲後特殊判定：中央可被吃即算（不論保護）');
+      if (attackersIgnoreProtect.length > 0 && !canEscape) {
+        reasons.push('D 81歲後特殊判定：中央可被吃且飛不出去（不論保護）');
         triggers.push('D');
         triggered = true;
         if (!mainAttacker) mainAttacker = attackersIgnoreProtect[0];
@@ -2117,7 +2153,7 @@ function computeScores(board) {
   }
 
   // ====================================================================
-  // 書版 v2.9.4 分數比例調整（2026-05-09 祥哥糾正後對齊書本原文）
+  // 書版 v2.9.5 分數比例調整（2026-05-09 祥哥糾正後對齊書本原文）
   //
   // 書本原文依據：
   //   ▼ 通吃格 P77：「通吃格在計算所得的收穫時，依經驗大多只有 20%⋯⋯
@@ -4637,6 +4673,11 @@ function renderNatalAnalysis() {
     const lb = getLayerBoard(layer.idx);
     if (!lb.center) continue;
     const ageR = parseAge(layer.age);
+    // 計算前一局棋盤（v2.9.5 新增 — 用於生死關「過局往上吃」判定）
+    //   局 2 的上一局 = 局 1（總格）
+    //   局 8 的上一局 = 局 7
+    //   局 1 沒有上一局（也不會判生死關，因為總格不論）
+    const prevLb = layer.idx > 1 ? getLayerBoard(layer.idx - 1) : null;
     const context = {
       isMingPan: true,
       layerNum: layer.idx,
@@ -4644,7 +4685,8 @@ function renderNatalAnalysis() {
       ageEnd: ageR.end,
       totalHasXiang, totalSelfPaoMaCanEat, totalSelfCanEatXiang,
       gender: natalGender,
-      married: natalMarried
+      married: natalMarried,
+      prevLb  // v2.9.5 新增：前一局棋盤，供 canEscapeUpward 用
     };
     const patterns = detectPatterns(lb, context);
     const scoreInfo = computeScores(lb);
@@ -4684,7 +4726,7 @@ function renderNatalAnalysis() {
     html += `<div class="piece-meta"><b>中央 ${lb.center.name}</b>：${lb.center.persona}</div>`;
 
     // 詳細版批命盤解說（書版 P170 — 命盤解說：詳細版）
-    const prevLb = layer.idx > 1 ? getLayerBoard(layer.idx - 1) : null;
+    // 重用上方已宣告的 prevLb（v2.9.5 起合併計算，避免重複宣告）
     html += buildDetailedNarrative(layer, lb, prevLb, patterns, scoreInfo, fiveInfo, {gender:natalGender, married:natalMarried});
 
     html += `</div>`;
@@ -4932,8 +4974,8 @@ function renderReference() {
   }
   html += '</div></div>';
 
-  // 書版 v2.9.4 — 象棋走法（祥哥 2026-05-09 糾正後新增）
-  html += `<div class="section"><div class="section-title">象棋走法速查（書版 v2.9.4 — 第 5 章基本概念）</div>
+  // 書版 v2.9.5 — 象棋走法（祥哥 2026-05-09 糾正後新增）
+  html += `<div class="section"><div class="section-title">象棋走法速查（書版 v2.9.5 — 第 5 章基本概念）</div>
     <div class="item">📌 <b>將／帥</b>：上下左右相鄰可吃（不論異色比它大的也吃不到，一樣大互吃）。<small>蔡老師：「將最大、帥最大，將跟帥都是」</small></div>
     <div class="item">📌 <b>士／仕</b>：上下左右相鄰可吃。比士小的可吃（將不能吃）。同階互吃。</div>
     <div class="item">📌 <b>象／相</b>：上下左右相鄰可吃。比相小的可吃（將/士不能吃）。同階互吃。</div>
@@ -4952,7 +4994,7 @@ function renderReference() {
     <div class="item">📌 <b>保護判定</b>：當 attacker 移到 victim 位置後，是否有同色守衛能反吃這個 attacker → 有=被保護，分數減半。</div>
   </div>`;
 
-  html += `<div class="section"><div class="section-title">26 格局速查（書版 v2.9.4 — 《改寫人生的象棋卜卦》）</div>
+  html += `<div class="section"><div class="section-title">26 格局速查（書版 v2.9.5 — 《改寫人生的象棋卜卦》）</div>
     <div class="item">📌 <b>① 好朋友格</b>：同字異色配對（將仕象車兵=中外圍相鄰／馬=斜對／炮=跨中央有跳板）→ 互相欣賞，整盤分數減半</div>
     <div class="item">📌 <b>② 好人緣格</b>：同字異色但不符好朋友位置（看得到=相鄰或斜對；炮包除外）→ 人緣不錯，可互吃</div>
     <div class="item">📌 <b>③ 互相欣賞格</b>：黑士+紅俥 / 紅仕+黑車 → 彼此欣賞，能降低威脅能量</div>
@@ -4978,17 +5020,19 @@ function renderReference() {
     <div class="item">📌 <b>㉓ 雨傘格</b>：②③④同色 → 有天助（撐傘看不到天，心情會悶）。命盤最後一局=這輩子是輪迴最後一世</div>
     <div class="item good">📌 <b>㉔ 十字天助格</b>：①②③同色 + ④⑤異色（橫向）<b>或</b> ①④⑤同色 + ②③異色（縱向）→ 純粹十字架形狀，有天助、有老天看顧、時機對了。注意：另外兩支必須跟中央異色，否則就變成雨傘格/眾星拱月/悔恨格</div>
     <div class="item good">📌 <b>㉕ 修行緣分格</b>（命盤）：中央相象+同色傌馬炮包/中央傌馬炮包/有雨傘十字天助 → 跟神明有連結</div>
-    <div class="item warn">📌 <b>㉖ 生死關</b>（書版 P31-P32 + IMG_0819，僅限命盤十年運 2-8 局，總格 1-10／81-90 歲不論）<br>
+    <div class="item warn">📌 <b>㉖ 生死關</b>（書版 P31-P32 + IMG_0819 + 老師吳慧琳 AriesWu 整理三條件，僅限命盤十年運 2-8 局，總格 1-10／81-90 歲不論）<br>
       <b>📅 年紀對應</b>：第2局 11-20歲（學習格）｜第3局 21-30歲（情感格）｜第4局 31-40歲（事業格）｜第5局 41-50歲｜第6局 51-60歲｜第7局 61-70歲｜第8局 71-80歲<br>
-      <b>🚨 5 觸發層</b>：A. 中央無路+無保護+至少一支可吃中央 ｜B. 50歲後別色將/帥暴動可吃 ｜C. 70歲後出現分離格 ｜D. 81歲後不論保護只要能被吃就算（好朋友/悔恨格機率大）｜E. 陰陽不協調/消耗+包炮動能不足 → 可能性<br>
+      <b>🔑 書本/老師三條件（v2.9.5 完整對齊）</b>：① <b>一定被吃掉</b>（外圍有對方棋能吃中央）② <b>沒人保護</b>（中央同色無守衛能反殺攻擊者）③ <b>飛不出去</b>（中央不能同盤反吃外圍對方棋，<b>也不能過局往上吃上一局棋</b>）—— 三條件全部成立才算生死關。<br>
+      <b>📖 老師範例</b>：局 7 中棋炮 → 能飛到上面過局往上吃 → <b>飛得出去 = 不構成生死關</b>｜局 8 中棋馬 → 馬走斜，5 子盤永遠吃不到，跨局也一樣 → <b>飛不出去 = 構成生死關</b><br>
+      <b>🚨 5 觸發層</b>：A. 三條件全成立（一定被吃+無保護+飛不出去）｜B. 50歲後別色將/帥暴動可吃 ｜C. 70歲後出現分離格 ｜D. 81歲後不論保護只要能被吃就算（含好朋友/悔恨格機率大）｜E. 陰陽不協調/消耗+包炮動能不足 → 可能性<br>
       <b>💊 死因器官</b>：仕→呼吸/肺/大腸 ｜相→心血管 ｜馬→意外 ｜炮→腎/婦科 ｜兵→脾胃/免疫 ｜俥→肝膽/行車 ｜帥/將→重大關卡<br>
       <b>⚔️ 死因方式（被誰吃）</b>：被將/帥吃→意外 ｜被士/仕吃→刀關 ｜被車/相吃→心血管 ｜被卒/兵吃→脾胃免疫<br>
       <b>✦ 4 避過條件 H1-H4</b>：H1. 30歲前+總格有象/相→天助 ｜H2. 總格自己包炮馬傌可吃別人→神明力量 ｜H3. 總格自己可吃不同色象/相→累世修行 ｜H4. 當局雨傘格/十字天助/中央象相→有機會<br>
       <b>📿 觸發後</b>：書版說「卦象只是讓我們看到意識資料庫裡有這樣的資料」 — 觸發≠必然發生，必須做完整療癒淨化（咒輪紙+下定義+交託+噴瓶+火化）清理該年紀的劇情。命盤頁會自動產出「⚠️ 生死關警示專區」明確列出年紀+原因+避過條件。</div>
   </div>`;
 
-  // 書版 v2.9.4 — 生命靈數＋後天五行＋九星五行對照表
-  html += `<div class="section"><div class="section-title">生命靈數・後天五行・九星五行對照表（書版 v2.9.4 — 《生命靈數開運密碼・九星 X 五行》）</div>
+  // 書版 v2.9.5 — 生命靈數＋後天五行＋九星五行對照表
+  html += `<div class="section"><div class="section-title">生命靈數・後天五行・九星五行對照表（書版 v2.9.5 — 《生命靈數開運密碼・九星 X 五行》）</div>
     <div class="item">📌 <b>計算規則</b>：把西元出生年月日的所有數字疊加，反覆相加直到單位數（1-9）= 靈數。<br>例：1983/04/04 → 1+9+8+3+0+4+0+4 = 29 → 2+9 = 11 → 1+1 = 2（土）。</div>
     <div class="item">📌 <b>先天五行 vs 後天五行</b>：先天=【命】（與生俱來的稟賦），後天=【運】。透過風水、中醫、命理（能量礦石、開運顏色）等可調整後天五行，達到趨吉避凶的作用。本系統算的是<b>後天五行</b>。</div>
     <div class="item">📌 <b>1-9 對照速查</b>（五行・八卦・自然・九星・五德・個性類型）：<br>
@@ -5013,7 +5057,7 @@ function renderReference() {
   </div>`;
 
   // 書版 v2.0 — 問事 5 規則
-  html += `<div class="section"><div class="section-title">問事 5 規則（書版 v2.9.4）</div>
+  html += `<div class="section"><div class="section-title">問事 5 規則（書版 v2.9.5）</div>
     <div class="item warn">📌 <b>規則一：命盤限本人抓棋，問事單卦只能問自己或直系血親</b><br>例外：卦主不便時可說「允許某某代我抓棋」（僅限問事單卦，年運/命盤不可）</div>
     <div class="item">📌 <b>規則二：可與其它占卜搭配</b>（生命靈數、後天五行等互補）</div>
     <div class="item warn">📌 <b>規則三：問題問得越明確越好</b><br>❌ 差：跟著朋友投資房地產會不會賺錢？<br>✅ 好：朋友跟我說的「那個房地產項目」，我投資的話會不會賺錢？</div>
@@ -5022,14 +5066,14 @@ function renderReference() {
   </div>`;
 
   // 書版 v2.0 — 問法善巧
-  html += `<div class="section"><div class="section-title">問法善巧（書版 v2.9.4 — 取代「要不要做」式問法）</div>
+  html += `<div class="section"><div class="section-title">問法善巧（書版 v2.9.5 — 取代「要不要做」式問法）</div>
     <div class="item warn">❌ 不精準問法：要不要做這件事？／他愛不愛我？／某人會不會選上？</div>
     <div class="item good">✅ 善巧問法：<br>　• 我去做這件事好不好？<br>　• 我做這件事會呈現什麼狀態？<br>　• 我做這件事有沒有什麼要注意的？<br>　• 我會不會跟某某結婚？／某某的決定對我是否有好影響？<br>　• 配偶/兄弟姐妹改成「他做的事會不會讓我開心」這種延伸到自己身上的問法</div>
     <div class="item info">書版心法：「卜卦的定位不是在幫別人算命，而是在幫助一個人『認識自己』」</div>
   </div>`;
 
   // 書版 v2.0 — 標準解卦五段式順序
-  html += `<div class="section"><div class="section-title">標準解卦五段式順序（書版 v2.9.4）</div>
+  html += `<div class="section"><div class="section-title">標準解卦五段式順序（書版 v2.9.5）</div>
     <div class="item">① <b>狀態</b>：從中央以及與中央同色的棋子論卦主特質</div>
     <div class="item">② <b>互動關係</b>：跟身邊的人的互動（吃、被吃、影響力）</div>
     <div class="item">③ <b>格局及需注意的狀態</b>：含犯小人、做錯決定、需留意的意外</div>
@@ -5070,13 +5114,13 @@ function renderReference() {
     <div class="item">🔮 <b>命盤</b> 看一輩子，32 支棋拆 8 局（每局重疊「上=前局下」），一輩子只能摸一次（除非顯化淨化過）</div>
     <div class="item">❓ <b>事件卦</b> 問具體事，全紅全黑 = 老天爺不答可換問法重來</div>
     <div class="item">🔄 <b>前世因果</b> 看前世身分、跟某人的前世關係</div>
-    <div class="item info">🆕 <b>療癒淨化效果卦</b>（書版 v2.9.4）：問「我療癒淨化的效果如何？」只看收穫不算付出</div>
+    <div class="item info">🆕 <b>療癒淨化效果卦</b>（書版 v2.9.5）：問「我療癒淨化的效果如何？」只看收穫不算付出</div>
     <div class="item warn">⚠ 一事一卦，不準也不能重複問同件事（除非設定期間如「3個月後再卜」或療癒淨化後）</div>
     <div class="item info">🆕 <b>命盤重排判定</b>：療癒淨化後想重排命盤，先卜單卦，中央=兵卒+乾淨好朋友格 → 可重排</div>
   </div>`;
 
   // 書版 v2.0 — 吃與被吃棋子的衍伸解釋表
-  html += `<div class="section"><div class="section-title">吃與被吃棋子的衍伸解釋表（書版 v2.9.4 — 第7章）</div>
+  html += `<div class="section"><div class="section-title">吃與被吃棋子的衍伸解釋表（書版 v2.9.5 — 第7章）</div>
     <div style="overflow-x:auto;">
     <table style="width:100%;border-collapse:collapse;font-size:13px;">
       <thead style="background:#fce8d0;color:#6b3410;">
@@ -5102,7 +5146,7 @@ function renderReference() {
   </div>`;
 
   // 書版 v2.0 — 前世關係判定表
-  html += `<div class="section"><div class="section-title">前世關係判定（書版 v2.9.4 — 第9章）</div>
+  html += `<div class="section"><div class="section-title">前世關係判定（書版 v2.9.5 — 第9章）</div>
     <div class="item info">前世卦看「卦主-對象」二棋的位置與棋種對應</div>
     <div class="item"><b>🔴 兵卒（直系血親較多）</b><br>　• ①兵+②卒：對方是你的妻子｜①兵+③卒：對方是兄弟姊妹<br>　• ①卒+③兵：對方是你的老公｜①卒+②兵：對方是兄弟姊妹<br>　• ①+④（中與上）：父母｜①+⑤（中與下）：子女<br>　• ④+⑤（上與下）：祖父母與孫子｜②+③（左右）：非直系血親兄弟姊妹<br>　• 斜對（②④/②⑤/③④/③⑤）：叔伯、姑嬸、舅舅、阿姨、姪子姪女</div>
     <div class="item"><b>🟣 炮包（情人類）</b><br>　• 炮包相鄰／偏桃花（①②/①③/①④/①⑤）：短暫的情人<br>　• 炮包隔山／正桃花（②③/④⑤）：外遇對象、情人或小妾<br>　• 炮包斜對／偏桃花（②④/②⑤/③④/③⑤）：有情慾但沒有真正交流的對象</div>
@@ -5115,7 +5159,7 @@ function renderReference() {
   </div>`;
 
   // 書版 v2.0 — 暴動格人體部位對照
-  html += `<div class="section"><div class="section-title">暴動格人體部位對應（書版 v2.9.4 — 鏡像）</div>
+  html += `<div class="section"><div class="section-title">暴動格人體部位對應（書版 v2.9.5 — 鏡像）</div>
     <div class="item info">棋盤位置 ↔ 人體部位（卦象的位置與人體左右剛好相反，因為棋盤是「面對我們的人」）</div>
     <div class="item">① 中央 → 脖子以下、肚臍以上（軀幹中央氣血循環）</div>
     <div class="item">② 左 → 身體<b>右側</b>（鏡像）</div>
@@ -5126,7 +5170,7 @@ function renderReference() {
   </div>`;
 
   // 書版 v2.0 — 療癒淨化效果判定表
-  html += `<div class="section"><div class="section-title">療癒淨化效果判定表（書版 v2.9.4 — 第10章）</div>
+  html += `<div class="section"><div class="section-title">療癒淨化效果判定表（書版 v2.9.5 — 第10章）</div>
     <div class="item info">問法：「<b>我療癒淨化／刪除資料的效果如何？</b>」<br>解卦：<b>只看「有沒有得吃」或「有沒有收穫」，不算付出</b></div>
     <div class="item">📌 <b>兵卒好朋友格</b>：方法正確且已清理到真正根源</div>
     <div class="item">📌 <b>其他好朋友格 / 相鄰明君格</b>：方法跟方向是正確的</div>
@@ -5163,7 +5207,7 @@ function renderReference() {
   </div>`;
 
   // 書版 v2.0 — 卦象中不同位置代表的角色（依卜主性別+婚姻狀態）
-  html += `<div class="section"><div class="section-title">位置代表的角色（書版 v2.9.4 — 第5章）</div>
+  html += `<div class="section"><div class="section-title">位置代表的角色（書版 v2.9.5 — 第5章）</div>
     <div class="item info">通用：①中=自己／④上=長輩(年齡>10歲)／⑤下=晚輩(年齡<10歲)<br>口訣：左手比較沒力 → ②左=女生；右手比較有力 → ③右=男生</div>
     <div class="item"><b>👨 男性卜主</b><br>　• 未婚：②姊妹/女朋友/女性平輩｜③兄弟/男性平輩<br>　• 已婚：②妻子/女性平輩｜③兄弟/男性平輩<br>　• 男性結婚前後跟兄弟關係不變，但跟姊妹會不一樣</div>
     <div class="item"><b>👩 女性卜主</b><br>　• 未婚：②姊妹/女性平輩｜③兄弟/男朋友/男性平輩<br>　• 已婚：②兄弟姊妹/女性平輩｜③丈夫/男性平輩<br>　• 女性結婚前後跟姊妹關係不變，但跟兄弟會不一樣（看法位置從③改看②）</div>
