@@ -6,6 +6,8 @@
 <title>濟公象棋卜卦系統</title>
 <!-- html2pdf.js：直接 DOM → Canvas → PDF 下載，繞過印表機驅動 paginate bug -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.3/html2pdf.bundle.min.js" defer></script>
+<!-- Supabase Auth：線上版必須先通過 Email／密碼驗證 -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -16,6 +18,112 @@
     padding: 20px;
   }
   .container { max-width: 1280px; margin: 0 auto; }
+  .auth-hidden { display: none !important; }
+  .auth-gate {
+    min-height: calc(100vh - 40px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 0;
+  }
+  .auth-card {
+    width: min(100%, 420px);
+    background: rgba(255,255,255,0.96);
+    border: 1px solid rgba(139,69,19,0.18);
+    border-radius: 16px;
+    padding: 32px;
+    box-shadow: 0 14px 40px rgba(74,40,16,0.18);
+  }
+  .auth-mark {
+    width: 68px;
+    height: 68px;
+    margin: 0 auto 16px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    background: #8b4513;
+    font-size: 34px;
+    box-shadow: 0 6px 16px rgba(139,69,19,0.24);
+  }
+  .auth-card h1 { margin-bottom: 8px; }
+  .auth-intro {
+    text-align: center;
+    color: #6b3410;
+    font-size: 14px;
+    line-height: 1.6;
+    margin-bottom: 24px;
+  }
+  .auth-field { margin-bottom: 16px; }
+  .auth-field label {
+    display: block;
+    color: #4a2810;
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 7px;
+  }
+  .auth-field input {
+    width: 100%;
+    border: 2px solid #d4b896;
+    border-radius: 8px;
+    padding: 11px 12px;
+    color: #2c1810;
+    background: #fffdf9;
+    font: inherit;
+    outline: none;
+  }
+  .auth-field input:focus {
+    border-color: #8b4513;
+    box-shadow: 0 0 0 3px rgba(139,69,19,0.12);
+  }
+  .auth-submit {
+    width: 100%;
+    border: 0;
+    border-radius: 8px;
+    padding: 12px 16px;
+    color: #fff;
+    background: #8b4513;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .auth-submit:hover { background: #6b3410; }
+  .auth-submit:disabled { opacity: 0.65; cursor: wait; }
+  .auth-message {
+    min-height: 22px;
+    margin-top: 12px;
+    color: #b42318;
+    text-align: center;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  .auth-session-bar {
+    max-width: 1280px;
+    margin: 0 auto 10px;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 10px;
+    color: #6b3410;
+    font-size: 12px;
+  }
+  .auth-logout {
+    border: 1px solid #8b4513;
+    border-radius: 6px;
+    padding: 5px 10px;
+    color: #8b4513;
+    background: rgba(255,255,255,0.72);
+    cursor: pointer;
+    font: inherit;
+    font-weight: 700;
+  }
+  .auth-logout:hover { color: #fff; background: #8b4513; }
+  @media (max-width: 520px) {
+    body { padding: 12px; }
+    .auth-gate { min-height: calc(100vh - 24px); }
+    .auth-card { padding: 26px 20px; }
+  }
   h1 {
     text-align: center;
     color: #8b4513;
@@ -837,6 +945,31 @@
 </style>
 </head>
 <body>
+<section id="auth-gate" class="auth-gate" aria-labelledby="auth-title">
+  <div class="auth-card">
+    <div class="auth-mark" aria-hidden="true">棋</div>
+    <h1 id="auth-title">濟公象棋卜卦系統</h1>
+    <p class="auth-intro">本系統為限定帳號使用，請先登入。</p>
+    <form id="auth-form" novalidate>
+      <div class="auth-field">
+        <label for="auth-email">Email 帳號</label>
+        <input id="auth-email" name="email" type="email" inputmode="email" autocomplete="username" required>
+      </div>
+      <div class="auth-field">
+        <label for="auth-password">密碼</label>
+        <input id="auth-password" name="password" type="password" autocomplete="current-password" required>
+      </div>
+      <button id="auth-submit" class="auth-submit" type="submit">登入系統</button>
+      <div id="auth-message" class="auth-message" role="alert" aria-live="polite"></div>
+    </form>
+  </div>
+</section>
+
+<main id="app-shell" class="auth-hidden">
+<div class="auth-session-bar">
+  <span id="auth-user"></span>
+  <button id="auth-logout" class="auth-logout" type="button">登出</button>
+</div>
 <div class="container">
   <h1>濟公象棋卜卦系統</h1>
   <div class="subtitle">單卦・命盤・前世因果 ・自動格局判讀＋敘述生成</div>
@@ -1084,6 +1217,7 @@
   </div>
 
 </div>
+</main>
 
 <script>
 /* =========================================================================
@@ -5607,8 +5741,21 @@ function setupTabs() {
   });
 }
 
-/* ===== 啟動 ===== */
-window.addEventListener('DOMContentLoaded', () => {
+/* ===== Supabase 登入驗證 ===== */
+const SUPABASE_URL = 'https://wxjubemcgasbjauoqgfn.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_qDtryS8il8KE9tF89JzbFg__XuHZ7Hf';
+let buguaAuthClient = null;
+let buguaAppStarted = false;
+
+function buguaIsLocal() {
+  return location.protocol === 'file:' ||
+    location.hostname === 'localhost' ||
+    location.hostname === '127.0.0.1';
+}
+
+function startBuguaApp() {
+  if (buguaAppStarted) return;
+  buguaAppStarted = true;
   setupTabs();
   setupSingle();
   setupNatal();
@@ -5617,6 +5764,90 @@ window.addEventListener('DOMContentLoaded', () => {
   renderReference();
   renderBoard('board-single', board);
   renderBoard('board-pastlife', plBoard);
+}
+
+function showBuguaApp(email = '') {
+  document.getElementById('auth-gate').classList.add('auth-hidden');
+  document.getElementById('app-shell').classList.remove('auth-hidden');
+  document.getElementById('auth-user').textContent = email ? `已登入：${email}` : '本機離線模式';
+  document.getElementById('auth-logout').classList.toggle('auth-hidden', !email);
+  startBuguaApp();
+}
+
+function showLoginGate(message = '') {
+  document.getElementById('app-shell').classList.add('auth-hidden');
+  document.getElementById('auth-gate').classList.remove('auth-hidden');
+  document.getElementById('auth-message').textContent = message;
+}
+
+async function setupAuthentication() {
+  const form = document.getElementById('auth-form');
+  const submitButton = document.getElementById('auth-submit');
+  const message = document.getElementById('auth-message');
+  const logoutButton = document.getElementById('auth-logout');
+
+  if (buguaIsLocal()) {
+    showBuguaApp();
+    return;
+  }
+
+  if (!window.supabase?.createClient) {
+    showLoginGate('登入服務載入失敗，請檢查網路後重新整理頁面。');
+    submitButton.disabled = true;
+    return;
+  }
+
+  buguaAuthClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+
+  const { data: { session }, error: sessionError } = await buguaAuthClient.auth.getSession();
+  if (sessionError) {
+    showLoginGate('無法確認登入狀態，請重新登入。');
+  } else if (session?.user) {
+    showBuguaApp(session.user.email || '');
+  } else {
+    showLoginGate();
+  }
+
+  form.addEventListener('submit', async event => {
+    event.preventDefault();
+    const email = document.getElementById('auth-email').value.trim();
+    const password = document.getElementById('auth-password').value;
+
+    if (!email || !password) {
+      message.textContent = '請輸入 Email 帳號與密碼。';
+      return;
+    }
+
+    submitButton.disabled = true;
+    submitButton.textContent = '登入中…';
+    message.textContent = '';
+
+    const { data, error } = await buguaAuthClient.auth.signInWithPassword({ email, password });
+    submitButton.disabled = false;
+    submitButton.textContent = '登入系統';
+
+    if (error || !data.user) {
+      message.textContent = 'Email 或密碼錯誤，請重新輸入。';
+      return;
+    }
+
+    form.reset();
+    showBuguaApp(data.user.email || email);
+  });
+
+  logoutButton.addEventListener('click', async () => {
+    logoutButton.disabled = true;
+    const { error } = await buguaAuthClient.auth.signOut();
+    logoutButton.disabled = false;
+    showLoginGate(error ? '登出失敗，請重新整理頁面。' : '已安全登出。');
+  });
+}
+
+/* ===== 啟動 ===== */
+window.addEventListener('DOMContentLoaded', () => {
+  setupAuthentication().catch(() => {
+    showLoginGate('登入服務發生錯誤，請稍後重試。');
+  });
 });
 </script>
 </body>
