@@ -1101,7 +1101,7 @@
         </div>
       </div>
       <div style="font-size:11px;color:#888;margin-bottom:10px;line-height:1.5;">
-        說明：性別+婚姻會影響②③位置代表的人物（男未婚=②姊妹/女友 ③兄弟｜男已婚=②妻子 ③兄弟｜女未婚=②姊妹 ③兄弟/男友｜女已婚=②兄弟姊妹 ③丈夫）。<b>女性卜主</b>命盤會自動觸發離婚格判定（書版 v2.9.6）。
+        說明：性別+婚姻會影響②③位置代表的人物（男未婚=②姊妹/女友 ③兄弟｜男已婚=②妻子 ③兄弟｜女未婚=②姊妹 ③兄弟/男友｜女已婚=②兄弟姊妹 ③丈夫）。<b>女性卜主</b>命盤會自動觸發離婚格判定（書版 v2.9.7）。
       </div>
       <div class="picker-title">選棋子（也可以重複放）：當前選擇 <span id="cur-pick-natal">尚未選擇</span></div>
       <div class="picker-grid" id="picker-natal"></div>
@@ -1191,13 +1191,33 @@
               </div>
               <div style="font-size:12px;color:#888;margin-top:6px;">年（4 位數）／月（1-12）／日（1-31）</div>
             </div>
+            <!-- v2.9.7 新增：性別（正版九星五行需要）-->
+            <div style="margin-bottom:14px;">
+              <label style="display:block;margin-bottom:6px;font-weight:600;color:#555;">性別（正版九星五行需要）：</label>
+              <select id="lingshu-gender" style="width:100%;padding:10px;border:1px solid #d4b896;border-radius:6px;font-size:15px;font-family:inherit;background:#fff;">
+                <option value="">未指定（不算正版九星五行）</option>
+                <option value="male">👨 男性</option>
+                <option value="female">👩 女性</option>
+              </select>
+              <div style="font-size:12px;color:#888;margin-top:6px;">書本 IMG_6777：男女性用不同九星對照表</div>
+            </div>
+            <!-- v2.9.7 新增：農曆生日（判定 40 歲後五行轉換）-->
+            <div style="margin-bottom:14px;">
+              <label style="display:block;margin-bottom:6px;font-weight:600;color:#555;">農曆生日月/日（選填）：</label>
+              <div style="display:flex;gap:8px;">
+                <input type="number" id="lingshu-lunar-month" placeholder="農曆月" min="1" max="12" style="flex:1;padding:10px;border:1px solid #d4b896;border-radius:6px;font-size:15px;font-family:inherit;">
+                <input type="number" id="lingshu-lunar-day" placeholder="農曆日" min="1" max="30" style="flex:1;padding:10px;border:1px solid #d4b896;border-radius:6px;font-size:15px;font-family:inherit;">
+              </div>
+              <div style="font-size:12px;color:#888;margin-top:6px;">農曆 8/16 後生 → 40 歲後五行會轉換（書本規則）。不填則不判斷轉換。</div>
+            </div>
             <div class="picker-actions">
               <button class="btn btn-primary" id="btn-calc-lingshu">📊 計算生命靈數</button>
               <button class="btn btn-primary" id="btn-print-lingshu" style="background:#9b59b6;">📄 匯出生命靈數 PDF</button>
               <button class="btn btn-secondary" id="btn-clear-lingshu">清空</button>
             </div>
             <div style="margin-top:14px;padding:10px 12px;background:#fff8f0;border-left:3px solid #d4a574;border-radius:4px;font-size:12.5px;color:#6b3410;line-height:1.6;">
-              💡 <b>先天五行</b>=【命】：與生俱來的稟賦。<b>後天五行</b>=【運】：透過風水、中醫、命理等調整以達趨吉避凶。本系統算的是<b>後天五行</b>。
+              💡 <b>先天五行</b>=【命】：與生俱來的稟賦。<b>後天五行</b>=【運】：透過風水、中醫、命理等調整以達趨吉避凶。本系統算的是<b>後天五行</b>。<br>
+              🆕 <b>v2.9.7</b> 加：人生功課、別人眼中的你、九宮圖、能量連線、正版民國九星、加分顏色使用指引。
             </div>
           </div>
         </div>
@@ -2316,7 +2336,7 @@ function computeScores(board) {
   const centerLoss = allyLoss;
 
   // ====================================================================
-  // 書版 v2.9.6 分數比例調整（2026-05-09 祥哥糾正後對齊書本原文）
+  // 書版 v2.9.7 分數比例調整（2026-05-09 祥哥糾正後對齊書本原文）
   //
   // 書本原文依據：
   //   ▼ 通吃格 P77：「通吃格在計算所得的收穫時，依經驗大多只有 20%⋯⋯
@@ -5137,8 +5157,8 @@ function renderReference() {
   }
   html += '</div></div>';
 
-  // 書版 v2.9.6 — 象棋走法（祥哥 2026-05-09 糾正後新增）
-  html += `<div class="section"><div class="section-title">象棋走法速查（書版 v2.9.6 — 第 5 章基本概念）</div>
+  // 書版 v2.9.7 — 象棋走法（祥哥 2026-05-09 糾正後新增）
+  html += `<div class="section"><div class="section-title">象棋走法速查（書版 v2.9.7 — 第 5 章基本概念）</div>
     <div class="item">📌 <b>將／帥</b>：上下左右相鄰可吃（不論異色比它大的也吃不到，一樣大互吃）。<small>蔡老師：「將最大、帥最大，將跟帥都是」</small></div>
     <div class="item">📌 <b>士／仕</b>：上下左右相鄰可吃。比士小的可吃（將不能吃）。同階互吃。</div>
     <div class="item">📌 <b>象／相</b>：上下左右相鄰可吃。比相小的可吃（將/士不能吃）。同階互吃。</div>
@@ -5157,7 +5177,7 @@ function renderReference() {
     <div class="item">📌 <b>保護判定</b>：當 attacker 移到 victim 位置後，是否有同色守衛能反吃這個 attacker → 有=被保護，分數減半。</div>
   </div>`;
 
-  html += `<div class="section"><div class="section-title">26 格局速查（書版 v2.9.6 — 《改寫人生的象棋卜卦》）</div>
+  html += `<div class="section"><div class="section-title">26 格局速查（書版 v2.9.7 — 《改寫人生的象棋卜卦》）</div>
     <div class="item">📌 <b>① 好朋友格</b>：同字異色配對（將仕象車兵=中外圍相鄰／馬=斜對／炮=跨中央有跳板）→ 互相欣賞，整盤分數減半</div>
     <div class="item">📌 <b>② 好人緣格</b>：同字異色但不符好朋友位置（看得到=相鄰或斜對；炮包除外）→ 人緣不錯，可互吃</div>
     <div class="item">📌 <b>③ 互相欣賞格</b>：黑士+紅俥 / 紅仕+黑車 → 彼此欣賞，能降低威脅能量</div>
@@ -5194,8 +5214,8 @@ function renderReference() {
       <b>📿 觸發後</b>：書版說「卦象只是讓我們看到意識資料庫裡有這樣的資料」 — 觸發≠必然發生，必須做完整療癒淨化（咒輪紙+下定義+交託+噴瓶+火化）清理該年紀的劇情。命盤頁會自動產出「⚠️ 生死關警示專區」明確列出年紀+原因+避過條件。</div>
   </div>`;
 
-  // 書版 v2.9.6 — 生命靈數＋後天五行＋九星五行對照表
-  html += `<div class="section"><div class="section-title">生命靈數・後天五行・九星五行對照表（書版 v2.9.6 — 《生命靈數開運密碼・九星 X 五行》）</div>
+  // 書版 v2.9.7 — 生命靈數＋後天五行＋九星五行對照表
+  html += `<div class="section"><div class="section-title">生命靈數・後天五行・九星五行對照表（書版 v2.9.7 — 《生命靈數開運密碼・九星 X 五行》）</div>
     <div class="item">📌 <b>計算規則</b>：把西元出生年月日的所有數字疊加，反覆相加直到單位數（1-9）= 靈數。<br>例：1983/04/04 → 1+9+8+3+0+4+0+4 = 29 → 2+9 = 11 → 1+1 = 2（土）。</div>
     <div class="item">📌 <b>先天五行 vs 後天五行</b>：先天=【命】（與生俱來的稟賦），後天=【運】。透過風水、中醫、命理（能量礦石、開運顏色）等可調整後天五行，達到趨吉避凶的作用。本系統算的是<b>後天五行</b>。</div>
     <div class="item">📌 <b>1-9 對照速查</b>（五行・八卦・自然・九星・五德・個性類型）：<br>
@@ -5220,7 +5240,7 @@ function renderReference() {
   </div>`;
 
   // 書版 v2.0 — 問事 5 規則
-  html += `<div class="section"><div class="section-title">問事 5 規則（書版 v2.9.6）</div>
+  html += `<div class="section"><div class="section-title">問事 5 規則（書版 v2.9.7）</div>
     <div class="item warn">📌 <b>規則一：命盤限本人抓棋，問事單卦只能問自己或直系血親</b><br>例外：卦主不便時可說「允許某某代我抓棋」（僅限問事單卦，年運/命盤不可）</div>
     <div class="item">📌 <b>規則二：可與其它占卜搭配</b>（生命靈數、後天五行等互補）</div>
     <div class="item warn">📌 <b>規則三：問題問得越明確越好</b><br>❌ 差：跟著朋友投資房地產會不會賺錢？<br>✅ 好：朋友跟我說的「那個房地產項目」，我投資的話會不會賺錢？</div>
@@ -5229,14 +5249,14 @@ function renderReference() {
   </div>`;
 
   // 書版 v2.0 — 問法善巧
-  html += `<div class="section"><div class="section-title">問法善巧（書版 v2.9.6 — 取代「要不要做」式問法）</div>
+  html += `<div class="section"><div class="section-title">問法善巧（書版 v2.9.7 — 取代「要不要做」式問法）</div>
     <div class="item warn">❌ 不精準問法：要不要做這件事？／他愛不愛我？／某人會不會選上？</div>
     <div class="item good">✅ 善巧問法：<br>　• 我去做這件事好不好？<br>　• 我做這件事會呈現什麼狀態？<br>　• 我做這件事有沒有什麼要注意的？<br>　• 我會不會跟某某結婚？／某某的決定對我是否有好影響？<br>　• 配偶/兄弟姐妹改成「他做的事會不會讓我開心」這種延伸到自己身上的問法</div>
     <div class="item info">書版心法：「卜卦的定位不是在幫別人算命，而是在幫助一個人『認識自己』」</div>
   </div>`;
 
   // 書版 v2.0 — 標準解卦五段式順序
-  html += `<div class="section"><div class="section-title">標準解卦五段式順序（書版 v2.9.6）</div>
+  html += `<div class="section"><div class="section-title">標準解卦五段式順序（書版 v2.9.7）</div>
     <div class="item">① <b>狀態</b>：從中央以及與中央同色的棋子論卦主特質</div>
     <div class="item">② <b>互動關係</b>：跟身邊的人的互動（吃、被吃、影響力）</div>
     <div class="item">③ <b>格局及需注意的狀態</b>：含犯小人、做錯決定、需留意的意外</div>
@@ -5277,13 +5297,13 @@ function renderReference() {
     <div class="item">🔮 <b>命盤</b> 看一輩子，32 支棋拆 8 局（每局重疊「上=前局下」），一輩子只能摸一次（除非顯化淨化過）</div>
     <div class="item">❓ <b>事件卦</b> 問具體事，全紅全黑 = 老天爺不答可換問法重來</div>
     <div class="item">🔄 <b>前世因果</b> 看前世身分、跟某人的前世關係</div>
-    <div class="item info">🆕 <b>療癒淨化效果卦</b>（書版 v2.9.6）：問「我療癒淨化的效果如何？」只看收穫不算付出</div>
+    <div class="item info">🆕 <b>療癒淨化效果卦</b>（書版 v2.9.7）：問「我療癒淨化的效果如何？」只看收穫不算付出</div>
     <div class="item warn">⚠ 一事一卦，不準也不能重複問同件事（除非設定期間如「3個月後再卜」或療癒淨化後）</div>
     <div class="item info">🆕 <b>命盤重排判定</b>：療癒淨化後想重排命盤，先卜單卦，中央=兵卒+乾淨好朋友格 → 可重排</div>
   </div>`;
 
   // 書版 v2.0 — 吃與被吃棋子的衍伸解釋表
-  html += `<div class="section"><div class="section-title">吃與被吃棋子的衍伸解釋表（書版 v2.9.6 — 第7章）</div>
+  html += `<div class="section"><div class="section-title">吃與被吃棋子的衍伸解釋表（書版 v2.9.7 — 第7章）</div>
     <div style="overflow-x:auto;">
     <table style="width:100%;border-collapse:collapse;font-size:13px;">
       <thead style="background:#fce8d0;color:#6b3410;">
@@ -5309,7 +5329,7 @@ function renderReference() {
   </div>`;
 
   // 書版 v2.0 — 前世關係判定表
-  html += `<div class="section"><div class="section-title">前世關係判定（書版 v2.9.6 — 第9章）</div>
+  html += `<div class="section"><div class="section-title">前世關係判定（書版 v2.9.7 — 第9章）</div>
     <div class="item info">前世卦看「卦主-對象」二棋的位置與棋種對應</div>
     <div class="item"><b>🔴 兵卒（直系血親較多）</b><br>　• ①兵+②卒：對方是你的妻子｜①兵+③卒：對方是兄弟姊妹<br>　• ①卒+③兵：對方是你的老公｜①卒+②兵：對方是兄弟姊妹<br>　• ①+④（中與上）：父母｜①+⑤（中與下）：子女<br>　• ④+⑤（上與下）：祖父母與孫子｜②+③（左右）：非直系血親兄弟姊妹<br>　• 斜對（②④/②⑤/③④/③⑤）：叔伯、姑嬸、舅舅、阿姨、姪子姪女</div>
     <div class="item"><b>🟣 炮包（情人類）</b><br>　• 炮包相鄰／偏桃花（①②/①③/①④/①⑤）：短暫的情人<br>　• 炮包隔山／正桃花（②③/④⑤）：外遇對象、情人或小妾<br>　• 炮包斜對／偏桃花（②④/②⑤/③④/③⑤）：有情慾但沒有真正交流的對象</div>
@@ -5322,7 +5342,7 @@ function renderReference() {
   </div>`;
 
   // 書版 v2.0 — 暴動格人體部位對照
-  html += `<div class="section"><div class="section-title">暴動格人體部位對應（書版 v2.9.6 — 鏡像）</div>
+  html += `<div class="section"><div class="section-title">暴動格人體部位對應（書版 v2.9.7 — 鏡像）</div>
     <div class="item info">棋盤位置 ↔ 人體部位（卦象的位置與人體左右剛好相反，因為棋盤是「面對我們的人」）</div>
     <div class="item">① 中央 → 脖子以下、肚臍以上（軀幹中央氣血循環）</div>
     <div class="item">② 左 → 身體<b>右側</b>（鏡像）</div>
@@ -5333,7 +5353,7 @@ function renderReference() {
   </div>`;
 
   // 書版 v2.0 — 療癒淨化效果判定表
-  html += `<div class="section"><div class="section-title">療癒淨化效果判定表（書版 v2.9.6 — 第10章）</div>
+  html += `<div class="section"><div class="section-title">療癒淨化效果判定表（書版 v2.9.7 — 第10章）</div>
     <div class="item info">問法：「<b>我療癒淨化／刪除資料的效果如何？</b>」<br>解卦：<b>只看「有沒有得吃」或「有沒有收穫」，不算付出</b></div>
     <div class="item">📌 <b>兵卒好朋友格</b>：方法正確且已清理到真正根源</div>
     <div class="item">📌 <b>其他好朋友格 / 相鄰明君格</b>：方法跟方向是正確的</div>
@@ -5370,7 +5390,7 @@ function renderReference() {
   </div>`;
 
   // 書版 v2.0 — 卦象中不同位置代表的角色（依卜主性別+婚姻狀態）
-  html += `<div class="section"><div class="section-title">位置代表的角色（書版 v2.9.6 — 第5章）</div>
+  html += `<div class="section"><div class="section-title">位置代表的角色（書版 v2.9.7 — 第5章）</div>
     <div class="item info">通用：①中=自己／④上=長輩(年齡>10歲)／⑤下=晚輩(年齡<10歲)<br>口訣：左手比較沒力 → ②左=女生；右手比較有力 → ③右=男生</div>
     <div class="item"><b>👨 男性卜主</b><br>　• 未婚：②姊妹/女朋友/女性平輩｜③兄弟/男性平輩<br>　• 已婚：②妻子/女性平輩｜③兄弟/男性平輩<br>　• 男性結婚前後跟兄弟關係不變，但跟姊妹會不一樣</div>
     <div class="item"><b>👩 女性卜主</b><br>　• 未婚：②姊妹/女性平輩｜③兄弟/男朋友/男性平輩<br>　• 已婚：②兄弟姊妹/女性平輩｜③丈夫/男性平輩<br>　• 女性結婚前後跟姊妹關係不變，但跟兄弟會不一樣（看法位置從③改看②）</div>
@@ -5575,6 +5595,64 @@ const FIVE_GENERATED_BY  = { '木':'水','火':'木','土':'火','金':'土','�
 const FIVE_OVERCOME      = { '木':'土','火':'金','土':'水','金':'木','水':'火' }; // 我克（耗）
 const FIVE_OVERCOME_BY   = { '木':'金','火':'水','土':'木','金':'火','水':'土' }; // 克我（傷）
 
+/* ===== v2.9.7 新增：人生功課 0-8 詳細描述（書本《人生功課》PDF 明文）===== */
+// 計算公式：人生功課 = |月基數 - 日基數|
+//   月基數 = 月份兩位相加（04→4；12→1+2=3）
+//   日基數 = 日期兩位相加（24→2+4=6；28→2+8=10→1+0=1）
+const PERSONAL_TASK_DATA = {
+  0: { title:'大我貢獻', subject:'服務他人，破除偏見',
+       content:'你將擁有許多很好的機會，你應該好好的處理它。以個人自我為中心的追求，的確為你帶來一些個人的成就，但是你真正的幸福，是必須要為大我貢獻才能得到的，只有在為人類服務之後，你才會覺得你自己亦是這個世界的一部分。對擁有缺憾數字０的人來說，有一件事必須做到，那就是對任何事都不能心存偏見，這樣一來，你就有機會與各行各業的人交往。' },
+  1: { title:'獨立自主', subject:'學習獨立、堅持自己的判斷',
+       content:'你必須學習獨立、站穩腳步。你常會遇到自己的意見與他人的需求有所不同的情況，你需要經過一番奮鬥掙扎之後才能了解到自己的意志力。你將必須堅持、信賴自己的判斷；別盲目從眾，要肯定自己。因此，你將歷經很多試煉及錯誤，有時甚至無法控制自己的情況。有時內心充滿了挫折及憤怒，一直到你內心的天賦才能有辦法處理為止。你將會有一套自己的價值觀，你會發展成最具原創性改革性的自我。' },
+  2: { title:'放下敏感', subject:'走出情緒的高度緊張、發揮直覺力',
+       content:'你太敏感且太了解別人對你的期望。你會壓抑自己別太惹人注目，又會因自我意識過強而不知所措。你亦恐懼別人對你閒言閒語，因此你會變得過度壓抑自我。這一切都是肇因於你太過於將自己的獨特性壓抑的結果，而你又總是希望自己能和大眾融合。你的感情及情緒在你的生活中扮演很大的角色，你的高度緊張會引起恐懼、膽怯、缺少自信，你將經歷一些不必要的恐懼及情緒波濤。一點小事你有時就會覺得很難克服，而且那些事可能就會使你裹足不前。你會因嫉妒而引起痛苦及誤解。你擁有許多正面的特色，比如你有精確的認知力及直覺。你是別人內心感情的觸媒，在別人說出口之前，你就已經了解到他們內心的感覺了。你依著你的情緒感覺行事，但這個缺憾會使你了解並同情他人。對他人內心的波濤，你往往有很大的移情作用，所以你願意為別人解決情緒問題。' },
+  3: { title:'表達真我', subject:'放下自我批評、發揮創意',
+       content:'你嘗試自己的批評者，因而容易壓抑自己的創造力及自我。每次做事之前你就懷疑自我，且在事後你又無情地批評自我，你對自我的批評往往比別人對你的批評還要嚴苛。因此，為了安全，你總是只在事物的表面上處理，很少表達你內心的思想。相反地，你總是以幽默及敷衍的言行隱藏你內心的情感。你常覺得孤寂，社會上一些交互作用常使你在言行上感到緊張，所以你往往會想藉很多笑話來鬆弛心情。你可藉由寫作、繪畫、唱歌或舞蹈來作為感情的發洩。你要努力帶出真實的自我，並學習看重自己的價值。你自己的創意絕對高過別人的判斷力，這是一個你可憑藉它而變成完整個體的過程，你會更獨立，不用再附和他人。' },
+  4: { title:'務實根基', subject:'建立長久的基石、培養組織能力',
+       content:'你有缺少組織及規律的傾向，有時會不切實際，會幻想一些不可能或是幾乎沒什麼價值的計劃。你要學著去了解什麼是可能、什麼是不可能的。如果眼界不清，就會有完成計畫的困難，也不知眼前的路該如何走。你絕對擁有實際及組織的能力，但你首先必須培養組織及實際的特質，這樣一來，你便能與每天的生活切合，並且擁有成功的籌碼。你的缺憾便是要為自己的人生建造一個長久的基石，你需要毅力及不斷的努力。想迅速致富會引起不好的結果，不斷的努力才是你成功的關鍵。' },
+  5: { title:'耐性長久', subject:'從自由中學耐性、經營長久關係',
+       content:'你會有變成「滾石」的狀態。你想經歷各式各樣的生活、你需要自由、想嘗試很多事，並想去任何地方。小心別太沉溺於酒精、食物、藥與性之中。你必須更有耐性一點，要多了解他人，以建立且維持長久的關係，這可以幫助你結交更好的朋友。你要能處理一些不符你要求的情況，但也要學習冒險的精神。' },
+  6: { title:'理想務實', subject:'平衡理想與生活現實、看見美感',
+       content:'你的理想太高、不真實，會使得生活對你及他人來講較為困難。有一段時間你對自己做的事及別人做的事都感到不滿，有時缺少感謝之心，會使你看不見生活中的美感。有些僵硬的思想亦會使你無法有清楚的透視力，很可惜，因為這些清楚的透視力或許能幫助你從已接受之事中得到一些啟示。其實，這個缺憾數字要談的是你眼睛上的障礙物，障礙物會讓你無法看見更寬廣的視野，因此你會覺得自己就是一切，如此你便無法接收到對你有幫助的相關資訊。非常想要為人服務的你，有時會使你看不見自己內心發展的真正需要。你可能會傲慢且正直，常常告訴別人什麼是對的，什麼是錯的。你要學會在你的理想旨意及個人成長的障礙間尋求平衡。' },
+  7: { title:'學習信仰', subject:'開放內心對精神層面的好奇',
+       content:'你對於任何尚未證明的事都抱持懷疑的態度，特別是懷疑那些與精神層面有關的事，因此內心較不易尋求出個人的哲學來平靜地面對你的人生。你壓抑了許多內心自然的愛好，因為它們並不合於你理性的思考，你內心童稚似的天性亦被你壓抑住了。每一個人生命中一些不合理或哲學方面的整體思考，如精神、幽默、逗趣、直覺等特色都時常會被你排拒在外。建議要參與一些哲學團體，而在其間你可以得到另一層面的視野，也因此能將你內心潛藏的特性表現出來；否則你會有孤寂一生的危機。學習信仰，當你了解生活是由不可見的思緒、情緒、洞察力及愛組成時，你就會了解事實上你的感官所能主導的只是生活中的一小部分而已。' },
+  8: { title:'物精平衡', subject:'從財富執著走向精神富足',
+       content:'你的人生會因賺錢或奪得權力而冒險，有時對財富的欲望會使得你的個性及精神層面相形失色，亦影響了其他你做的每一件事。不要嘗試著想把一切轉變成財富，這會使你因此而必須承受孤獨，且將面臨精神的考驗，亦將會了解：人不是光靠麵包就可以活著，如果你能克服這個困難，便能達到物質與精神間的平衡。學習讓自己變成一條有力、涓涓不息的河流，如此你便能無窮盡地將養分帶給大家。一旦你了解你的缺點，你就能克服它；若你不知道自己的缺點，你就成了自己的受害者。而你的缺點就存在於你已感滿足的生活與你的自我之間。' }
+};
+
+/* ===== v2.9.7 新增：正版九星五行（民國年 + 性別對照，書本 IMG_6777）===== */
+// 男女性用不同對照表，每 9 年循環一次
+// 公式：offset = ((民國年 - 10) % 9 + 9) % 9 → 對應該表的索引
+// 民國年 = 西元年 - 1911
+const NINE_STAR_MALE   = [7, 6, 5, 4, 3, 2, 1, 9, 8];  // 男性 offset 0-8
+const NINE_STAR_FEMALE = [8, 9, 1, 2, 3, 4, 5, 6, 7];  // 女性 offset 0-8
+// 5 是中宮土，實際使用時：男變 2（坤地）、女變 8（艮山）— 書本 IMG_6777「五二」「五八」註記
+const NINE_STAR_CENTRAL_MAP = { male: 2, female: 8 };
+
+/* ===== v2.9.7 新增：九宮圖規則（書本 IMG_6763、6766）===== */
+// 單一數字能量：4=防小人、7=招貴人、8=招財
+const NINE_GRID_SINGLE_ENERGY = {
+  4: { name:'防小人', color:'#c0392b', hint:'穿戴紅色/紫色系有助擋小人氣' },
+  7: { name:'招貴人', color:'#27ae60', hint:'穿戴黃色/棕色系有助貴人氣' },
+  8: { name:'招財',   color:'#d4a017', hint:'穿戴金色/黃色系有助財氣' }
+};
+
+// 連線密碼：生日中同時出現的數字組成連線，代表能量
+const NINE_GRID_LINES = [
+  { key:'789',  numbers:[7,8,9], name:'貴人連線', energy:'人際貴人相助、招來良好人脈' },
+  { key:'147',  numbers:[1,4,7], name:'留財連線', energy:'守得住財富、錢留得下來' },
+  { key:'456',  numbers:[4,5,6], name:'學習連線', energy:'有助學業與知識累積、學什麼都容易上手' },
+  { key:'1590', numbers:[1,5,9,0], name:'能量連結', energy:'跟宇宙高維連結、靈感豐沛、感應力強' }
+];
+
+// 補數形狀（書本 IMG_6763）：△=思考方式(2×)、□=能量本質(4×)、○=一般能量
+const NINE_GRID_SHAPES = {
+  1:{s:'○',mul:1}, 2:{s:'○',mul:1}, 3:{s:'△',mul:2},
+  4:{s:'○',mul:1}, 5:{s:'△',mul:2}, 6:{s:'○',mul:1},
+  7:{s:'○',mul:1}, 8:{s:'□',mul:4}, 9:{s:'○',mul:1},
+  0:{s:'○',mul:1}
+};
+
 // 計算靈數：把日期所有數字反覆相加直到單位數
 function calcLingshu(year, month, day) {
   const digits = `${year}${String(month).padStart(2,'0')}${String(day).padStart(2,'0')}`.split('').map(Number);
@@ -5590,6 +5668,125 @@ function calcLingshu(year, month, day) {
   return { lingshu:n, steps, sum0 };
 }
 
+/* ===== v2.9.7 新增計算函數（人生功課 + 別人眼中的你 + 九宮圖 + 民國九星）===== */
+
+// 兩位數字相加（含疊加到單位數）
+function _sumDigitsToUnit(n) {
+  let x = n;
+  const steps = [];
+  while (x >= 10) {
+    const ds = String(x).split('').map(Number);
+    const next = ds.reduce((a,b)=>a+b, 0);
+    steps.push(ds.join('+') + '=' + next);
+    x = next;
+  }
+  return { value: x, steps };
+}
+
+// 人生功課 = |日基數 - 月基數|（月基數/日基數 都是各自兩位相加疊到單位數）
+function calcPersonalTask(month, day) {
+  const monthBase = _sumDigitsToUnit(month).value;
+  const dayBase = _sumDigitsToUnit(day).value;
+  const task = Math.abs(monthBase - dayBase);
+  // 若差 >= 10（罕見）再疊加
+  const finalTask = task >= 10 ? _sumDigitsToUnit(task).value : task;
+  return {
+    monthBase, dayBase, task: finalTask,
+    formula: `月基數 |${month}→${monthBase}| − 日基數 |${day}→${dayBase}| = |${monthBase - dayBase}| = ${finalTask}`
+  };
+}
+
+// 別人眼中的你 / 補數 = 出生日兩位相加疊到單位數
+function calcOthersView(day) {
+  const dayStr = String(day);
+  const digits = dayStr.split('').map(Number);
+  const sum = digits.reduce((a,b)=>a+b, 0);
+  const stretched = _sumDigitsToUnit(sum);
+  return {
+    value: stretched.value,
+    formula: `${dayStr}日 → ${digits.join('+')}=${sum}${stretched.steps.length ? ' → ' + stretched.steps.join(' → ') : ''}`
+  };
+}
+
+// 九宮圖：把出生日期所有數字統計到 1-9 + 0 的次數
+function calcNineGrid(year, month, day) {
+  const dateStr = `${year}${String(month).padStart(2,'0')}${String(day).padStart(2,'0')}`;
+  const digits = dateStr.split('').map(Number);
+  const counts = {0:0, 1:0, 2:0, 3:0, 4:0, 5:0, 6:0, 7:0, 8:0, 9:0};
+  for (const d of digits) counts[d]++;
+  return { counts, digits, dateStr };
+}
+
+// 空缺數判定：1-9 哪些數字沒出現（含常用所缺數字提示）
+function detectMissingNumbers(counts) {
+  const missing = [];
+  for (let i = 1; i <= 9; i++) {
+    if (counts[i] === 0) {
+      const energy = NINE_GRID_SINGLE_ENERGY[i] || null;
+      missing.push({ num: i, energy });
+    }
+  }
+  return missing;
+}
+
+// 連線密碼判定：檢查 1590/147/456/789 是否成立（生日中每個數字都出現至少 1 次）
+function detectNineGridLines(counts) {
+  const detected = [];
+  for (const line of NINE_GRID_LINES) {
+    const allPresent = line.numbers.every(n => counts[n] > 0);
+    if (allPresent) detected.push(line);
+  }
+  return detected;
+}
+
+// 民國年計算（西元 - 1911）
+function getMinguoYear(gregorianYear) {
+  return gregorianYear - 1911;
+}
+
+// 現在年齡（用今年年份 - 出生年份）
+function getCurrentAge(year, month, day) {
+  const now = new Date();
+  const thisYear = now.getFullYear();
+  const thisMonth = now.getMonth() + 1;
+  const thisDay = now.getDate();
+  let age = thisYear - year;
+  if (thisMonth < month || (thisMonth === month && thisDay < day)) age--;
+  return age;
+}
+
+// 民國年九星五行（IMG_6777 男女對照表）
+function calcNineStarByMinguoYear(minguoYear, gender) {
+  const offset = ((minguoYear - 10) % 9 + 9) % 9;
+  const rawStar = gender === 'male' ? NINE_STAR_MALE[offset] : NINE_STAR_FEMALE[offset];
+  // 5 是中宮，男變 2、女變 8（書本 IMG_6777「五二」「五八」註記）
+  const effectiveStar = rawStar === 5 ? NINE_STAR_CENTRAL_MAP[gender] : rawStar;
+  return {
+    rawStar, effectiveStar,
+    offset,
+    isCentral: rawStar === 5,
+    formula: `民國${minguoYear}年 → offset ${offset} → ${gender === 'male' ? '男性' : '女性'}表 = ${rawStar}${rawStar === 5 ? ' 中宮 → 借用 ' + effectiveStar + '（' + (gender === 'male' ? '坤地' : '艮山') + '）' : ''}`
+  };
+}
+
+// 農曆中秋節後判定（書本 IMG_6777：農曆 8/16 後生 → 一生兩種五行，40 歲後轉換）
+function isAfterMidAutumn(lunarMonth, lunarDay) {
+  if (!lunarMonth || !lunarDay) return null;  // 未輸入農曆
+  if (lunarMonth > 8) return true;
+  if (lunarMonth === 8 && lunarDay >= 16) return true;
+  return false;
+}
+
+// 40 歲後五行轉換（下一個星，male 遞減、female 遞增）
+function getNineStarAfter40(currentStar, gender) {
+  const table = gender === 'male' ? NINE_STAR_MALE : NINE_STAR_FEMALE;
+  const idx = table.indexOf(currentStar);
+  if (idx < 0) return currentStar;
+  const nextIdx = (idx + 1) % 9;
+  const next = table[nextIdx];
+  return next === 5 ? NINE_STAR_CENTRAL_MAP[gender] : next;
+}
+
 function setupLingshu() {
   const btnCalc = document.getElementById('btn-calc-lingshu');
   const btnClear = document.getElementById('btn-clear-lingshu');
@@ -5601,6 +5798,10 @@ function setupLingshu() {
     document.getElementById('lingshu-year').value = '';
     document.getElementById('lingshu-month').value = '';
     document.getElementById('lingshu-day').value = '';
+    // v2.9.7 新增欄位一起清
+    const gender = document.getElementById('lingshu-gender'); if (gender) gender.value = '';
+    const lm = document.getElementById('lingshu-lunar-month'); if (lm) lm.value = '';
+    const ld = document.getElementById('lingshu-lunar-day'); if (ld) ld.value = '';
     document.getElementById('analysis-lingshu').innerHTML = '<div class="empty-msg">請輸入西元出生年月日，按「📊 計算生命靈數」即可分析。</div>';
   };
   if (btnPrint) {
@@ -5704,6 +5905,206 @@ function analyzeLingshu() {
   html += renderLingshuColorRow('◎ 其次的顏色', data.second, '#2980b9', '#e8f4f9');
   html += renderLingshuColorRow('※ 不適合的顏色', data.avoid, '#c0392b', '#fdecea');
   html += `</div>`;
+
+  /* ===== v2.9.7 新增 6 個分析區塊 ===== */
+
+  // 讀取新輸入
+  const genderEl = document.getElementById('lingshu-gender');
+  const gender = genderEl ? genderEl.value : '';
+  const lunarMonthEl = document.getElementById('lingshu-lunar-month');
+  const lunarDayEl = document.getElementById('lingshu-lunar-day');
+  const lunarMonth = lunarMonthEl && lunarMonthEl.value ? parseInt(lunarMonthEl.value) : null;
+  const lunarDay = lunarDayEl && lunarDayEl.value ? parseInt(lunarDayEl.value) : null;
+
+  // ① 加分顏色使用指引（IMG_6778）— 立刻補在開運顏色之後
+  html += `<div class="layer-card" style="border-left-color:#8e44ad;background:#faf3fb;">`;
+  html += `<div class="layer-title" style="color:#7d3c98;">💡 加分顏色的實務使用（書本 IMG_6778）</div>`;
+  html += `<div style="background:#fff;padding:12px 14px;border-radius:6px;font-size:13.5px;line-height:1.9;color:#444;">`;
+  html += `<b>✅ 有磁場影響（重點用最佳顏色）</b>：<br>`;
+  html += `　🛏 <b>睡衣、床單、被套</b>（睡覺時人的意識較弱，顏色磁場影響最大）<br>`;
+  html += `　🏠 家中要增加磁場的開運物品（例如：<b>貔貅、水晶</b>）<br>`;
+  html += `　💎 帶在身上有磁場的<b>手鍊、項鍊</b>、能量礦石等<br><br>`;
+  html += `<b>🔓 不需要設限（喜歡就好）</b>：<br>`;
+  html += `　👕 平常醒著時所穿的衣服 → <b>喜歡就好，不需設限</b>（意識強能主導能量）<br><br>`;
+  html += `<b>🌈 顏色三層次的優先順序</b>：<br>`;
+  html += `　(1) <b style="color:#27ae60;">生我者（補）</b>：${generatedBy} → ${data.element}，母親五行，最強加分<br>`;
+  html += `　(2) <b style="color:#d4a574;">比和者（旺）</b>：${data.element} 同五行，同向加強能量<br>`;
+  html += `　(3) <b style="color:#e67e22;">我生者（洩）</b>：${data.element} → ${generates}，中性能量（洩太多會虛）`;
+  html += `</div></div>`;
+
+  // ② 人生功課（PDF《人生功課》+ IMG_6767 公式）
+  const taskInfo = calcPersonalTask(month, day);
+  const taskData = PERSONAL_TASK_DATA[taskInfo.task];
+  if (taskData) {
+    html += `<div class="layer-card" style="border-left-color:#e67e22;background:#fff8f0;">`;
+    html += `<div class="layer-title" style="color:#a85814;">🎯 ${subj}的人生功課：【${taskInfo.task}】《${taskData.title}》</div>`;
+    html += `<div style="background:#fff;padding:8px 12px;border-radius:5px;font-size:12.5px;color:#666;margin:10px 0;border-left:3px solid #e67e22;">`;
+    html += `<b>計算公式</b>：人生功課 = |日基數 − 月基數|<br>`;
+    html += `　${taskInfo.formula}`;
+    html += `</div>`;
+    html += `<div style="background:#fef9f0;padding:12px 14px;border-radius:6px;font-size:13.5px;line-height:1.8;color:#444;border-left:3px solid #d4a574;">`;
+    html += `<b>《${taskData.subject}》</b><br><br>`;
+    html += `${taskData.content}`;
+    html += `</div></div>`;
+  }
+
+  // ③ 別人眼中的你 / 補數（IMG_6760、6762）
+  const othersView = calcOthersView(day);
+  const othersData = LINGSHU_DATA[othersView.value] || null;
+  html += `<div class="layer-card" style="border-left-color:#3498db;background:#f0f7fb;">`;
+  html += `<div class="layer-title" style="color:#1e6091;">👀 ${subj}別人眼中的你（補數）：【${othersView.value}】${othersData ? ' ' + othersData.type : ''}</div>`;
+  html += `<div style="background:#fff;padding:8px 12px;border-radius:5px;font-size:12.5px;color:#666;margin:10px 0;border-left:3px solid #3498db;">`;
+  html += `<b>計算公式</b>：別人眼中的你 = 出生日兩位相加（若≥10 再疊加）<br>`;
+  html += `　${othersView.formula}`;
+  html += `</div>`;
+  if (othersData) {
+    html += `<div style="background:#e8f4f9;padding:12px 14px;border-radius:6px;font-size:13.5px;line-height:1.8;color:#444;border-left:3px solid #3498db;">`;
+    html += `別人第一眼看到您，會認為您是【${othersView.value}】${othersData.type}的人：<br><br>`;
+    html += `<b>${othersData.persona}</b><br><br>`;
+    html += `<small style="color:#666;">※ 這是「表面形象」，不一定是您內在的樣子（內在是靈數 ${result.lingshu}）。當「靈數」跟「別人眼中的你」數字不同時，代表內外有落差，可能需要花時間讓別人理解真正的你。</small>`;
+    html += `</div>`;
+  }
+  html += `</div>`;
+
+  // ④ 九宮圖（IMG_6763-6766）+ 空缺數警示 + 連線密碼
+  const nineGrid = calcNineGrid(year, month, day);
+  const missingNums = detectMissingNumbers(nineGrid.counts);
+  const detectedLines = detectNineGridLines(nineGrid.counts);
+
+  html += `<div class="layer-card" style="border-left-color:#c0392b;background:#fdecea;">`;
+  html += `<div class="layer-title" style="color:#922b1c;">🎴 ${subj}的九宮圖（生日數字統計）</div>`;
+  html += `<div style="background:#fff;padding:8px 12px;border-radius:5px;font-size:12.5px;color:#666;margin:10px 0;border-left:3px solid #c0392b;">`;
+  html += `生日 <b>${year}/${String(month).padStart(2,'0')}/${String(day).padStart(2,'0')}</b> → 數字統計：`;
+  html += `<div style="margin-top:6px;">`;
+  for (let i = 0; i <= 9; i++) {
+    if (nineGrid.counts[i] > 0) {
+      const shape = NINE_GRID_SHAPES[i];
+      html += `<span style="display:inline-block;margin:3px;padding:3px 8px;background:#fdecea;border-radius:12px;font-size:12px;"><b>${i}</b>×${nineGrid.counts[i]} <small style="color:#888;">(${shape.s},${shape.mul}×)</small></span>`;
+    }
+  }
+  html += `</div></div>`;
+
+  // 3x3 九宮視覺（把 1-9 排在九宮格，0 特別在旁邊）
+  html += `<div style="display:grid;grid-template-columns:repeat(3,70px);grid-gap:4px;justify-content:center;margin:14px auto;">`;
+  for (let i = 1; i <= 9; i++) {
+    const count = nineGrid.counts[i];
+    const shape = NINE_GRID_SHAPES[i];
+    const energy = NINE_GRID_SINGLE_ENERGY[i];
+    const bg = count > 0 ? (energy ? energy.color + '22' : '#fef0eb') : '#f5f5f5';
+    const border = count > 0 ? (energy ? energy.color : '#c0392b') : '#ccc';
+    html += `<div style="background:${bg};border:2px solid ${border};border-radius:6px;padding:6px 4px;text-align:center;position:relative;">`;
+    html += `<div style="font-size:22px;font-weight:700;color:${count > 0 ? '#333' : '#bbb'};">${i}</div>`;
+    html += `<div style="font-size:10px;color:#666;">${shape.s}(${shape.mul}×)</div>`;
+    if (count > 0) html += `<div style="position:absolute;top:2px;right:4px;background:#c0392b;color:#fff;border-radius:10px;padding:0 5px;font-size:10px;font-weight:700;">×${count}</div>`;
+    if (energy) html += `<div style="font-size:9px;color:${energy.color};font-weight:600;margin-top:1px;">${energy.name}</div>`;
+    html += `</div>`;
+  }
+  html += `</div>`;
+  // 0 特別列（在九宮格外）
+  if (nineGrid.counts[0] > 0) {
+    html += `<div style="text-align:center;margin:6px 0;"><span style="display:inline-block;padding:4px 10px;background:#fef0eb;border:2px solid #c0392b;border-radius:6px;font-size:14px;">0 (○,1×) ×${nineGrid.counts[0]}</span></div>`;
+  }
+
+  // 空缺數警示
+  if (missingNums.length > 0) {
+    html += `<div style="background:#fff8e8;padding:10px 12px;border-radius:5px;margin-top:12px;border-left:3px solid #f39c12;">`;
+    html += `<b style="color:#8b6914;">⚠ 空缺數（您人生欠缺的能量）</b><br>`;
+    html += `<div style="margin-top:6px;font-size:13px;line-height:1.8;">`;
+    for (const m of missingNums) {
+      if (m.energy) {
+        html += `<div><b style="color:${m.energy.color};">${m.num}（${m.energy.name}）</b>：${m.energy.hint}</div>`;
+      } else {
+        html += `<div>${m.num}：空缺</div>`;
+      }
+    }
+    html += `<small style="color:#666;">※ 常用所缺數字（穿戴該數字對應顏色）在特定用途上會有加分作用。</small>`;
+    html += `</div></div>`;
+  }
+
+  // 補數形狀說明
+  html += `<div style="background:#f3f8f3;padding:8px 12px;border-radius:5px;margin-top:8px;font-size:12px;color:#555;line-height:1.6;">`;
+  html += `<b>📐 形狀能量（書本 IMG_6763）</b>：<br>`;
+  html += `　○ 圓＝一般能量（1×）｜△ 三角形＝<b>思考方式</b>（2×，含 3、5）｜□ 正方形＝<b>能量本質</b>（4×，含 8）`;
+  html += `</div>`;
+  html += `</div>`;
+
+  // ⑤ 能量連線分析（IMG_6766）
+  html += `<div class="layer-card" style="border-left-color:#27ae60;background:#f0f9f0;">`;
+  html += `<div class="layer-title" style="color:#1e6e3a;">🔗 能量連線密碼（書本 IMG_6766）</div>`;
+  if (detectedLines.length > 0) {
+    html += `<div style="background:#fff;padding:10px 14px;border-radius:6px;font-size:13.5px;line-height:1.9;color:#444;border-left:3px solid #27ae60;">`;
+    html += `<b>✅ 您有以下能量連線</b>（生日中同時出現該連線的所有數字）：<br><br>`;
+    for (const line of detectedLines) {
+      html += `<div style="margin:6px 0;padding:6px 10px;background:#e8f5e8;border-radius:4px;"><b style="color:#1e6e3a;">${line.numbers.join('-')} ${line.name}</b>：${line.energy}</div>`;
+    }
+    html += `</div>`;
+  } else {
+    html += `<div style="background:#fff8e8;padding:10px 14px;border-radius:6px;font-size:13.5px;color:#8b6914;border-left:3px solid #f39c12;">`;
+    html += `本次生日<b>沒有</b>觸發任何主要能量連線（789/147/456/1590）。可透過穿戴對應數字所缺的顏色來加強能量。`;
+    html += `</div>`;
+  }
+  html += `<div style="background:#f3f8f3;padding:8px 12px;border-radius:5px;margin-top:10px;font-size:12px;color:#555;line-height:1.6;">`;
+  html += `<b>📖 連線密碼參考</b>：<br>`;
+  for (const line of NINE_GRID_LINES) {
+    html += `　<b>${line.numbers.join('-')}</b> ${line.name}：${line.energy}<br>`;
+  }
+  html += `</div></div>`;
+
+  // ⑥ 正版九星五行（民國年 + 性別，IMG_6777）
+  if (gender) {
+    const minguoYear = getMinguoYear(year);
+    const nineStar = calcNineStarByMinguoYear(minguoYear, gender);
+    const starData = LINGSHU_DATA[nineStar.effectiveStar];
+    const currentAge = getCurrentAge(year, month, day);
+    const afterMidAutumn = isAfterMidAutumn(lunarMonth, lunarDay);
+
+    html += `<div class="layer-card" style="border-left-color:#2980b9;background:#f0f7fb;">`;
+    html += `<div class="layer-title" style="color:#1e6091;">⭐ ${subj}的正版九星五行（民國年 + 性別對照 IMG_6777）</div>`;
+    html += `<div style="background:#fff;padding:8px 12px;border-radius:5px;font-size:12.5px;color:#666;margin:10px 0;border-left:3px solid #2980b9;">`;
+    html += `<b>計算公式</b>：民國年（${gender === 'male' ? '男性' : '女性'}表）→ 對照九星五行<br>`;
+    html += `　${nineStar.formula}`;
+    html += `</div>`;
+    if (starData) {
+      html += `<div style="background:#e8f4f9;padding:12px 14px;border-radius:6px;font-size:13.5px;line-height:1.8;color:#444;border-left:3px solid #2980b9;">`;
+      html += `<b>${nineStar.effectiveStar}【${starData.element}】${starData.bagua}・${starData.symbol}《${starData.star}》— ${starData.type}</b><br><br>`;
+      html += starData.persona;
+      html += `</div>`;
+      // 對比生命靈數：若跟生命靈數不同，提示「命與運」的差異
+      if (nineStar.effectiveStar !== result.lingshu) {
+        html += `<div style="background:#fff8e8;padding:8px 12px;border-radius:5px;margin-top:10px;font-size:12.5px;color:#8b6914;border-left:3px solid #f39c12;">`;
+        html += `💡 <b>您的正版九星（${nineStar.effectiveStar}）與生命靈數（${result.lingshu}）不同</b>：<br>`;
+        html += `　九星＝天生的先天能量磁場；生命靈數＝後天顯示的性格模式。兩者不同時，會呈現「內外能量差異」，可從兩個角度理解自己。`;
+        html += `</div>`;
+      }
+      // 40 歲後五行轉換提示
+      if (afterMidAutumn === true) {
+        const nextStar = getNineStarAfter40(nineStar.effectiveStar, gender);
+        const nextData = LINGSHU_DATA[nextStar];
+        html += `<div style="background:#fdecea;padding:10px 12px;border-radius:5px;margin-top:10px;font-size:13px;color:#922b1c;border-left:3px solid #c0392b;">`;
+        html += `⚠ <b>農曆 8/16 後生（中秋節後）→ 40 歲後五行會轉換</b>（書本 IMG_6777）<br>`;
+        if (currentAge < 40) {
+          html += `　您現在 <b>${currentAge} 歲</b>，還在原五行【${starData.element}】階段。40 歲後會轉為【${nextData.element}】《${nextData.star}》${nextData.type}，屆時個性與能量磁場會有轉變。`;
+        } else {
+          html += `　您現在 <b>${currentAge} 歲</b>（已過 40），實際能量已轉為【${nextData.element}】《${nextData.star}》${nextData.type}。原五行【${starData.element}】的影響已消退，可觀察新五行的個性顯現。`;
+        }
+        html += `</div>`;
+      } else if (afterMidAutumn === false) {
+        html += `<div style="background:#e8f5e8;padding:8px 12px;border-radius:5px;margin-top:10px;font-size:12.5px;color:#1e6e3a;border-left:3px solid #27ae60;">`;
+        html += `✓ <b>農曆 8/15 前生（中秋節前）→ 一生一種五行不會變</b>（書本 IMG_6777）`;
+        html += `</div>`;
+      } else {
+        html += `<div style="background:#f5f5f5;padding:8px 12px;border-radius:5px;margin-top:10px;font-size:12.5px;color:#666;border-left:3px solid #999;">`;
+        html += `💡 未輸入農曆生日 → 無法判斷 40 歲後是否會轉五行。填「農曆月/日」可精確判斷。`;
+        html += `</div>`;
+      }
+    }
+    html += `</div>`;
+  } else {
+    html += `<div class="layer-card" style="border-left-color:#999;background:#f5f5f5;">`;
+    html += `<div class="layer-title" style="color:#666;">⭐ 正版九星五行（需選性別）</div>`;
+    html += `<div style="padding:10px;font-size:13px;color:#666;">選擇「性別」欄位後，系統會用民國年+男女對照表算出<b>書本正版九星五行</b>（IMG_6777），並判斷 40 歲後是否會轉五行。</div>`;
+    html += `</div>`;
+  }
 
   // 五行生克分析
   html += `<div class="layer-card" style="border-left-color:#2980b9;">`;
