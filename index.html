@@ -5741,11 +5741,49 @@ function setupTabs() {
   });
 }
 
-/* ===== Supabase 登入驗證 ===== */
+/* ===== Supabase 登入驗證 + 應急備用密碼機制（2026-07-26 加固）===== */
 const SUPABASE_URL = 'https://wxjubemcgasbjauoqgfn.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_qDtryS8il8KE9tF89JzbFg__XuHZ7Hf';
+const SUPABASE_TIMEOUT_MS = 8000;    // Supabase 呼叫超時（超過 → 自動 fallback 應急密碼）
 let buguaAuthClient = null;
 let buguaAppStarted = false;
+
+// 應急備用密碼機制（Supabase pause / 網路斷 / SDK 未載入時的救急備援）
+// SALT 必須跟「應急密碼hash產生工具.html」的 SALT 完全一致
+// entries 由祥哥用本機工具產出後手動填入（原始密碼永遠不進 repo）
+const EMERGENCY_AUTH = {
+  salt: 'bugua-emergency-2026-xiang-adan3862936',
+  entries: [
+    // 2026-07-26 祥哥用本機工具產生（原始密碼從未進入 repo 或對話）
+    { email: 'adan3862936@gmail.com', hash: 'f68060cefe9b5664669406bc6a848184384034d6cb1b589bc93a067a0e938967' },
+  ]
+};
+
+async function _sha256Hex(text) {
+  const buf = new TextEncoder().encode(text);
+  const hashBuf = await crypto.subtle.digest('SHA-256', buf);
+  return Array.from(new Uint8Array(hashBuf))
+    .map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// 密碼 stretching：SHA-256 迴圈 100 次（增加破解成本，且執行時間仍 < 0.1s）
+async function _computeEmergencyHash(email, password) {
+  const salt = EMERGENCY_AUTH.salt;
+  let hash = await _sha256Hex(`${salt}::${email.trim().toLowerCase()}::${password}`);
+  for (let i = 0; i < 99; i++) {
+    hash = await _sha256Hex(hash + '::' + salt);
+  }
+  return hash;
+}
+
+async function checkEmergencyAuth(email, password) {
+  if (!email || !password || EMERGENCY_AUTH.entries.length === 0) return false;
+  const emailLower = email.trim().toLowerCase();
+  const matchingEntries = EMERGENCY_AUTH.entries.filter(e => e.email.toLowerCase() === emailLower);
+  if (matchingEntries.length === 0) return false;
+  const inputHash = await _computeEmergencyHash(email, password);
+  return matchingEntries.some(e => e.hash === inputHash);
+}
 
 function buguaIsLocal() {
   return location.protocol === 'file:' ||
@@ -5780,6 +5818,15 @@ function showLoginGate(message = '') {
   document.getElementById('auth-message').textContent = message;
 }
 
+// 早期表單保護：頁面一載入就綁 preventDefault，避免 Supabase SDK 未載入時
+// form 用預設 GET 送出把密碼寫進 URL（?email=&password=）
+function _installEarlyFormGuard() {
+  const form = document.getElementById('auth-form');
+  if (!form) return;
+  form.addEventListener('submit', event => event.preventDefault(), { capture: true });
+}
+_installEarlyFormGuard();
+
 async function setupAuthentication() {
   const form = document.getElementById('auth-form');
   const submitButton = document.getElementById('auth-submit');
@@ -5791,22 +5838,26 @@ async function setupAuthentication() {
     return;
   }
 
-  if (!window.supabase?.createClient) {
-    showLoginGate('登入服務載入失敗，請檢查網路後重新整理頁面。');
-    submitButton.disabled = true;
-    return;
+  // 嘗試建立 Supabase client + 檢查既有 session（若 SDK 已載入）
+  let sessionRestored = false;
+  if (window.supabase?.createClient) {
+    try {
+      buguaAuthClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+      const sessionPromise = buguaAuthClient.auth.getSession();
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('SESSION_TIMEOUT')), SUPABASE_TIMEOUT_MS));
+      const { data: { session }, error: sessionError } = await Promise.race([sessionPromise, timeoutPromise]);
+      if (!sessionError && session?.user) {
+        showBuguaApp(session.user.email || '');
+        sessionRestored = true;
+      }
+    } catch (_) {
+      // Session 檢查失敗（timeout / 網路）→ 繼續走登入畫面 + fallback
+    }
   }
+  if (sessionRestored) return;
 
-  buguaAuthClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
-
-  const { data: { session }, error: sessionError } = await buguaAuthClient.auth.getSession();
-  if (sessionError) {
-    showLoginGate('無法確認登入狀態，請重新登入。');
-  } else if (session?.user) {
-    showBuguaApp(session.user.email || '');
-  } else {
-    showLoginGate();
-  }
+  showLoginGate();
 
   form.addEventListener('submit', async event => {
     event.preventDefault();
@@ -5822,24 +5873,85 @@ async function setupAuthentication() {
     submitButton.textContent = '登入中…';
     message.textContent = '';
 
-    const { data, error } = await buguaAuthClient.auth.signInWithPassword({ email, password });
+    // === 主策略：優先 Supabase，失敗 fallback 應急備用密碼 ===
+    let loginSuccess = false;
+    let usedEmergency = false;
+    let loggedEmail = email;
+    let failReason = 'Email 或密碼錯誤，請重新輸入。';
+
+    if (buguaAuthClient) {
+      try {
+        const supabasePromise = buguaAuthClient.auth.signInWithPassword({ email, password });
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('SUPABASE_TIMEOUT')), SUPABASE_TIMEOUT_MS));
+        const { data, error } = await Promise.race([supabasePromise, timeoutPromise]);
+
+        if (!error && data?.user) {
+          loginSuccess = true;
+          loggedEmail = data.user.email || email;
+        } else if (error) {
+          // 判斷是「帳密錯」還是「服務故障」
+          const errMsg = String(error.message || '').toLowerCase();
+          const isCredentialError =
+            errMsg.includes('invalid') ||
+            errMsg.includes('credentials') ||
+            errMsg.includes('email not confirmed');
+
+          if (!isCredentialError) {
+            // 服務故障（Supabase pause / 專案暫停）→ 嘗試應急備用
+            if (await checkEmergencyAuth(email, password)) {
+              loginSuccess = true;
+              usedEmergency = true;
+            } else {
+              failReason = 'Supabase 服務暫時無法使用，且您輸入的不是應急備用密碼。請稍後重試。';
+            }
+          } else {
+            // 帳密錯誤 → 也給一次應急備用機會（可能祥哥用應急密碼救急）
+            if (await checkEmergencyAuth(email, password)) {
+              loginSuccess = true;
+              usedEmergency = true;
+            }
+            // 否則 failReason 保持「Email 或密碼錯誤」
+          }
+        }
+      } catch (_) {
+        // Supabase 呼叫超時或網路錯誤 → 嘗試應急備用
+        if (await checkEmergencyAuth(email, password)) {
+          loginSuccess = true;
+          usedEmergency = true;
+        } else {
+          failReason = 'Supabase 服務無回應（可能已 pause 或網路問題），且您輸入的不是應急備用密碼。';
+        }
+      }
+    } else {
+      // Supabase SDK 完全沒載入 → 直接嘗試應急備用
+      if (await checkEmergencyAuth(email, password)) {
+        loginSuccess = true;
+        usedEmergency = true;
+      } else {
+        failReason = '登入服務未載入（網路問題？），且您輸入的不是應急備用密碼。';
+      }
+    }
+
     submitButton.disabled = false;
     submitButton.textContent = '登入系統';
 
-    if (error || !data.user) {
-      message.textContent = 'Email 或密碼錯誤，請重新輸入。';
-      return;
+    if (loginSuccess) {
+      form.reset();
+      const displayLabel = usedEmergency ? `${loggedEmail}（應急備用模式）` : loggedEmail;
+      showBuguaApp(displayLabel);
+    } else {
+      message.textContent = failReason;
     }
-
-    form.reset();
-    showBuguaApp(data.user.email || email);
   });
 
   logoutButton.addEventListener('click', async () => {
     logoutButton.disabled = true;
-    const { error } = await buguaAuthClient.auth.signOut();
+    if (buguaAuthClient) {
+      try { await buguaAuthClient.auth.signOut(); } catch (_) { /* 應急模式登出無需 Supabase */ }
+    }
     logoutButton.disabled = false;
-    showLoginGate(error ? '登出失敗，請重新整理頁面。' : '已安全登出。');
+    showLoginGate('已安全登出。');
   });
 }
 
